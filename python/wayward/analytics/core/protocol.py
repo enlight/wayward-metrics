@@ -5,6 +5,8 @@
 @author: Bruce Mitchener <bruce.mitchener@waywardmonkeys.com>
 """
 
+import traceback
+
 from twisted.protocols import basic
 from twisted.python import log
 from wayward.analytics.core import constants, framing
@@ -14,44 +16,43 @@ class AnalyticsProtocolBase(basic.Int32StringReceiver):
         pass
 
 
-    def sendCommand(self, messageType, payload):
-        self.sendString(framing.encode(messageType, payload))
+    def sendCommand(self, messageType, correlationID, payload):
+        self.sendString(framing.encode(messageType, correlationID, payload))
 
 
     def stringReceived(self, msg):
         try:
-            (messageType, payload) = framing.decode(msg)
+            (messageType, correlationID, payload) = framing.decode(msg)
             methodName = self.dispatchTable.get(messageType)
             # log.msg("Executing %s:%s(%s)" % (messageType, methodName, payload))
             if methodName:
                 f = getattr(self, methodName)
-                result = f(payload)
+                result = f(correlationID, payload)
                 if result:
                     success, resultCode, message = result
                     if success:
-                        self._sendSuccess(resultCode, message)
+                        self._sendSuccess(correlationID, resultCode, message)
                     else:
-                        boundError = True
-                        if messageType == constants.METHOD_RECORD_DATA:
-                            boundError = False
-                        self._sendFailure(resultCode, message, boundError)
+                        self._sendFailure(correlationID, resultCode, message)
             else:
-                self._sendFailure(constants.ERROR_UNKNOWN_METHOD, methodName, True)
+                self._sendFailure(correlationID, constants.ERROR_UNKNOWN_METHOD, methodName)
         except:
             log.err()
-            self._sendFailure(constants.ERROR_UNKNOWN, '', False)
+            traceback.print_exc()
+            self._sendFailure(correlationID, constants.ERROR_UNKNOWN, '')
 
 
-    def analyticsReceiveResult(self, payload):
+    def analyticsReceiveResult(self, correlationID, payload):
         log.msg("Result: %s" % repr(payload))
 
 
-    def _sendSuccess(self, resultCode, message):
-        self.sendCommand(constants.METHOD_RECEIVE_RESULT, framing.encodePayload(True, resultCode, message))
+    def _sendSuccess(self, correlationID, resultCode, message):
+        self.sendCommand(constants.METHOD_RECEIVE_RESULT, correlationID,
+                         framing.encodePayload(True, resultCode, message))
 
 
-    def _sendFailure(self, resultCode, message, failureIsBoundToCommand):
-        self.sendCommand(constants.METHOD_RECEIVE_RESULT,
-                         framing.encodePayload(False, resultCode, message, failureIsBoundToCommand))
+    def _sendFailure(self, correlationID, resultCode, message):
+        self.sendCommand(constants.METHOD_RECEIVE_RESULT, correlationID,
+                         framing.encodePayload(False, resultCode, message))
 
 

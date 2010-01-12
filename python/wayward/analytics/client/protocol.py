@@ -22,11 +22,11 @@ class AnalyticsClientProtocol(protocol.AnalyticsProtocolBase):
         protocol.AnalyticsProtocolBase.__init__(self)
 
     def setAuthorizationCredentials(self, username, password):
-        self.sendCommand(constants.METHOD_SET_AUTHORIZATION_CREDENTIALS, framing.encodePayload(username, password))
+        self.sendCommand(constants.METHOD_SET_AUTHORIZATION_CREDENTIALS, 0, framing.encodePayload(username, password))
 
 
     def startSession(self, sessionID):
-        self.sendCommand(constants.METHOD_START_SESSION, framing.encodePayload(sessionID))
+        self.sendCommand(constants.METHOD_START_SESSION, 0, framing.encodePayload(sessionID))
 
 
     def setProtocolVersion(self, versionNumber):
@@ -34,58 +34,34 @@ class AnalyticsClientProtocol(protocol.AnalyticsProtocolBase):
 
 
     def recordData(self, buffer):
-        self.sendCommand(constants.METHOD_RECORD_DATA, buffer)
+        self.sendCommand(constants.METHOD_RECORD_DATA, 0, buffer)
 
 
     def observeSession(self, sessionID):
-        self.sendCommand(constants.METHOD_OBSERVE_SESSION, framing.encodePayload(sessionID))
+        self.sendCommand(constants.METHOD_OBSERVE_SESSION, 0, framing.encodePayload(sessionID))
 
 
     def stopObservingSession(self, sessionID):
-        self.sendCommand(constants.METHOD_STOP_OBSERVING_SESSION, framing.encodePayload(sessionID))
+        self.sendCommand(constants.METHOD_STOP_OBSERVING_SESSION, 0, framing.encodePayload(sessionID))
 
 
     def retrieveSession(self, sessionID):
-        self.sendCommand(constants.METHOD_RETRIEVE_SESSION, framing.encodePayload(sessionID))
+        self.sendCommand(constants.METHOD_RETRIEVE_SESSION, 0, framing.encodePayload(sessionID))
 
 
     def deleteSession(self, sessionID):
-        self.sendCommand(constants.METHOD_DELETE_SESSION, framing.encodePayload(sessionID))
+        self.sendCommand(constants.METHOD_DELETE_SESSION, 0, framing.encodePayload(sessionID))
 
 
     def listSessions(self, **flags):
-        self.sendCommand(constants.METHOD_LIST_SESSIONS, framing.encodePayload(flags))
+        self.sendCommand(constants.METHOD_LIST_SESSIONS, 0, framing.encodePayload(flags))
 
 
-    def stringReceived(self, msg):
-        try:
-            messageType, payload = framing.decode(msg)
-            methodName = self.dispatchTable.get(messageType)
-            print "Executing %s(%s)" % (methodName, payload) # XXX
-            if methodName:
-                f = getattr(self, methodName)
-                result = f(payload)
-                if result:
-                    success, resultCode, message = result
-                    if success:
-                        self._sendSuccess(resultCode, message)
-                    else:
-                        boundError = True
-                        if messageType == constants.METHOD_RECORD_DATA:
-                            boundError = False
-                        self._sendFailure(resultCode, message, boundError)
-            else:
-                self._sendFailure(False, constants.ERROR_UNKNOWN_METHOD, methodName, True)
-        except:
-            log.err()
-            self._sendFailure(False, constants.ERROR_UNKNOWN, '', False)
-
-
-    def analyticsReceiveSessionListCount(self, payload):
+    def analyticsReceiveSessionListCount(self, correlationID, payload):
         log.msg("Expecting %s sessions" % framing.decodePayload(payload)[0])
 
 
-    def analyticsReceiveSessionListItem(self, payload):
+    def analyticsReceiveSessionListItem(self, correlationID, payload):
         log.msg("Received session list item: %s" % framing.decodePayload(payload)[0])
 
 

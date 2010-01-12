@@ -36,35 +36,11 @@ class AnalyticsServerProtocol(protocol.AnalyticsProtocolBase):
             self.session = None
 
 
-    def stringReceived(self, msg):
-        try:
-            (messageType, payload) = framing.decode(msg)
-            methodName = self.dispatchTable.get(messageType)
-            # log.msg("Executing %s:%s(%s)" % (messageType, methodName, payload))
-            if methodName:
-                f = getattr(self, methodName)
-                result = f(payload)
-                if result:
-                    success, resultCode, message = result
-                    if success:
-                        self._sendSuccess(resultCode, message)
-                    else:
-                        boundError = True
-                        if messageType == constants.METHOD_RECORD_DATA:
-                            boundError = False
-                        self._sendFailure(resultCode, message, boundError)
-            else:
-                self._sendFailure(constants.ERROR_UNKNOWN_METHOD, methodName, True)
-        except:
-            log.err()
-            self._sendFailure(constants.ERROR_UNKNOWN, '', False)
-
-
-    def analyticsSetAuthorizationCredentials(self, payload):
+    def analyticsSetAuthorizationCredentials(self, correlationID, payload):
         pass
 
 
-    def analyticsStartSession(self, payload):
+    def analyticsStartSession(self, correlationID, payload):
         if not self.session:
             (sessionID,) = framing.decodePayload(payload)
             log.msg("Starting session %s" % sessionID)
@@ -74,12 +50,12 @@ class AnalyticsServerProtocol(protocol.AnalyticsProtocolBase):
             return (False, constants.ERROR_ALREADY_IN_SESSION, '')
 
 
-    def analyticsSetProtocolVersion(self, payload):
+    def analyticsSetProtocolVersion(self, correlationID, payload):
         (self.protocolVersion,) = framing.decodePayload(payload)
         return (True, constants.RESULT_NONE, '')
 
 
-    def analyticsRecordData(self, buffer):
+    def analyticsRecordData(self, correlationID, buffer):
         self.session.recordData(buffer)
         # No result so that we don't have a lot of useless traffic. Errors in
         # recording data need to be dealt with in some other manner (like
@@ -87,29 +63,30 @@ class AnalyticsServerProtocol(protocol.AnalyticsProtocolBase):
         return None
 
 
-    def analyticsObserveSession(self, payload):
+    def analyticsObserveSession(self, correlationID, payload):
         pass
 
 
-    def analyticsStopObservingSession(self, payload):
+    def analyticsStopObservingSession(self, correlationID, payload):
         pass
 
 
-    def analyticsRetrieveSession(self, payload):
+    def analyticsRetrieveSession(self, correlationID, payload):
         pass
 
 
-    def analyticsDeleteSession(self, payload):
+    def analyticsDeleteSession(self, correlationID, payload):
         pass
 
 
-    def analyticsListSessions(self, payload):
+    def analyticsListSessions(self, correlationID, payload):
         (flags,) = framing.decodePayload(payload)
         sessions = self.factory.sessionStore.getSessions(**flags)
         log.msg("Sending sessions... %s" % sessions)
-        self._sendSuccess(constants.RESULT_DATA_FOLLOWS, '')
-        self.sendCommand(constants.METHOD_RECEIVE_SESSION_LIST_COUNT, framing.encodePayload(len(sessions)))
+        self._sendSuccess(correlationID, constants.RESULT_DATA_FOLLOWS, '')
+        self.sendCommand(correlationID, constants.METHOD_RECEIVE_SESSION_LIST_COUNT, framing.encodePayload(len(sessions)))
         for session in sessions:
-            self.sendCommand(constants.METHOD_RECEIVE_SESSION_LIST_ITEM, framing.encodePayload(session.sessionID))
+            self.sendCommand(correlationID, constants.METHOD_RECEIVE_SESSION_LIST_ITEM, framing.encodePayload(session.sessionID))
+        return None
 
 

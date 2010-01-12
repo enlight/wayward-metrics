@@ -7,16 +7,16 @@
 
 import bert
 import struct
-gLengthPrefixStruct = struct.Struct("!I") # Python 2.5 and later, minor performance gain.
+gCommandHeaderStruct = struct.Struct("!II") # Python 2.5 and later, minor performance gain.
 
-def encode(messageType, payload):
-    return gLengthPrefixStruct.pack(messageType) + payload
+def encode(messageType, correlationID, payload):
+    return gCommandHeaderStruct.pack(messageType, correlationID) + payload
 
 
 def decode(buffer):
-    (messageType,) = gLengthPrefixStruct.unpack(buffer[:4])
-    payload = buffer[4:]
-    return (messageType, payload)
+    (messageType, correlationID) = gCommandHeaderStruct.unpack(buffer[:8])
+    payload = buffer[8:]
+    return (messageType, correlationID, payload)
 
 
 def encodePayload(*args, **kwargs):
