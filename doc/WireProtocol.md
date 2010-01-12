@@ -22,6 +22,7 @@ future to [BSON](http://www.mongodb.org/display/DOCS/BSON) or something
 else entirely.
 
 Our priorities here are:
+
    * High performance for encoding and decoding. We pass around a lot
      of information, so we need as little overhead per message as we can
      get.
