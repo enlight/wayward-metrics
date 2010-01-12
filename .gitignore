@@ -1,0 +1,6 @@
+syntax: glob
+
+*.swp
+*.pyc
+twistd.log*
+twistd.pid
