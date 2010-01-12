@@ -5,8 +5,6 @@
 @author: Bruce Mitchener <bruce.mitchener@waywardmonkeys.com>
 """
 
-import traceback
-
 from twisted.protocols import basic
 from twisted.python import log
 from wayward.analytics.core import constants, framing
@@ -38,7 +36,6 @@ class AnalyticsProtocolBase(basic.Int32StringReceiver):
                 self._sendFailure(correlationID, constants.ERROR_UNKNOWN_METHOD, methodName)
         except:
             log.err()
-            traceback.print_exc()
             self._sendFailure(correlationID, constants.ERROR_UNKNOWN, '')
 
 
