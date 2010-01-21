@@ -32,6 +32,7 @@ Future extensions may include:
    * Tracking file system I/O.
    * Hooking into other providers like dtrace and ptrace/truss and
      bridging that data into this system for further analysis.
+   * Database activity (queries, operations).
 
 All records include the thread ID that was active as well as high precision
 time stamps.

@@ -8,10 +8,10 @@
 from twisted.internet import protocol
 from twisted.python import log
 
-from wayward.analytics.client import protocol as analytics_protocol
+from wayward.metrics.client import protocol as metrics_protocol
 
-class AnalyticsClientFactory(protocol.ClientFactory):
-    protocol = analytics_protocol.AnalyticsClientProtocol
+class MetricsClientFactory(protocol.ClientFactory):
+    protocol = metrics_protocol.MetricsClientProtocol
 
 
     def clientConnectionFailed(self, connector, reason):

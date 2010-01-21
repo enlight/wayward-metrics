@@ -7,9 +7,9 @@
 
 from twisted.protocols import basic
 from twisted.python import log
-from wayward.analytics.core import constants, framing
+from wayward.metrics.core import constants, framing
 
-class AnalyticsProtocolBase(basic.Int32StringReceiver):
+class MetricsProtocolBase(basic.Int32StringReceiver):
     def __init__(self):
         pass
 
@@ -39,7 +39,7 @@ class AnalyticsProtocolBase(basic.Int32StringReceiver):
             self._sendFailure(correlationID, constants.ERROR_UNKNOWN, '')
 
 
-    def analyticsReceiveResult(self, correlationID, payload):
+    def metricsReceiveResult(self, correlationID, payload):
         log.msg("Result: %s" % repr(payload))
 
 

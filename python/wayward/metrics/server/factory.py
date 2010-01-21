@@ -8,22 +8,22 @@
 from twisted.internet import protocol
 from twisted.python import log
 
-from wayward.analytics.core import sessionstore
-from wayward.analytics.server import protocol as analytics_protocol
+from wayward.metrics.core import sessionstore
+from wayward.metrics.server import protocol as metrics_protocol
 
-class AnalyticsServerFactory(protocol.ServerFactory):
+class MetricsServerFactory(protocol.ServerFactory):
     """
-    Server factory and tracker for L{AnalyticsServerProtocol} connections.  This
+    Server factory and tracker for L{MetricsServerProtocol} connections.  This
     class also provides a session store for tracking available session data.
 
-    @ivar connections: A list of all the connected L{AnalyticsServerProtocol}
+    @ivar connections: A list of all the connected L{MetricsServerProtocol}
         instances using this object as their controller.
-    @type connections: C{list} of L{AnalyticsServerProtocol}
+    @type connections: C{list} of L{MetricsServerProtocol}
     @ivar sessionStore: A session storage manager.
     @type sessionStore: L{SessionStore}
     """
 
-    protocol = analytics_protocol.AnalyticsServerProtocol
+    protocol = metrics_protocol.MetricsServerProtocol
 
     def __init__(self):
         self.connections = []
@@ -37,14 +37,14 @@ class AnalyticsServerFactory(protocol.ServerFactory):
 
     def connectionMade(self, protocol):
         """
-        Track a newly connected L{AnalyticsServerProtocol}.
+        Track a newly connected L{MetricsServerProtocol}.
         """
         self.connections.append(protocol)
 
 
     def connectionLost(self, protocol):
         """
-        Stop tracking a no-longer connected L{AnalyticsServerProtocol}.
+        Stop tracking a no-longer connected L{MetricsServerProtocol}.
         """
         self.connections.remove(protocol)
 

@@ -7,27 +7,27 @@
 
 
 from twisted.internet import reactor
-from wayward.analytics.client import factory, protocol
+from wayward.metrics.client import factory, protocol
 
-analyticsClient = None
+metricsClient = None
 _sessionID = None
 
-class AnalyticsClient(protocol.AnalyticsClientProtocol):
+class MetricsClient(protocol.MetricsClientProtocol):
     def connectionMade(self):
-        global analyticsClient
-        analyticsClient = self
+        global metricsClient
+        metricsClient = self
         self.startSession(_sessionID)
 
 
 def initialize(host, port, sessionID):
     global _sessionID
     _sessionID = sessionID
-    clientFactory = factory.AnalyticsClientFactory()
-    clientFactory.protocol = AnalyticsClient
+    clientFactory = factory.MetricsClientFactory()
+    clientFactory.protocol = MetricsClient
     return reactor.connectTCP(host, port, clientFactory)
 
 def recordData(buffer):
-    analyticsClient.recordData(buffer)
+    metricsClient.recordData(buffer)
 
 def listSessions():
-    analyticsClient.listSessions()
+    metricsClient.listSessions()

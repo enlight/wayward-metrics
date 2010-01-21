@@ -8,18 +8,18 @@
 from twisted.protocols import basic
 from twisted.python import log
 
-from wayward.analytics.core import constants, framing, protocol
+from wayward.metrics.core import constants, framing, protocol
 
-class AnalyticsClientProtocol(protocol.AnalyticsProtocolBase):
+class MetricsClientProtocol(protocol.MetricsProtocolBase):
     PROTOCOL_VERSION = 1
     dispatchTable = {
-        constants.METHOD_RECEIVE_RESULT:             'analyticsReceiveResult',
-        constants.METHOD_RECEIVE_SESSION_LIST_COUNT: 'analyticsReceiveSessionListCount',
-        constants.METHOD_RECEIVE_SESSION_LIST_ITEM:  'analyticsReceiveSessionListItem',
+        constants.METHOD_RECEIVE_RESULT:             'metricsReceiveResult',
+        constants.METHOD_RECEIVE_SESSION_LIST_COUNT: 'metricsReceiveSessionListCount',
+        constants.METHOD_RECEIVE_SESSION_LIST_ITEM:  'metricsReceiveSessionListItem',
     }
 
     def __init__(self):
-        protocol.AnalyticsProtocolBase.__init__(self)
+        protocol.MetricsProtocolBase.__init__(self)
 
     def setAuthorizationCredentials(self, username, password):
         self.sendCommand(constants.METHOD_SET_AUTHORIZATION_CREDENTIALS, 0, framing.encodePayload(username, password))
@@ -57,11 +57,11 @@ class AnalyticsClientProtocol(protocol.AnalyticsProtocolBase):
         self.sendCommand(constants.METHOD_LIST_SESSIONS, 0, framing.encodePayload(flags))
 
 
-    def analyticsReceiveSessionListCount(self, correlationID, payload):
+    def metricsReceiveSessionListCount(self, correlationID, payload):
         log.msg("Expecting %s sessions" % framing.decodePayload(payload)[0])
 
 
-    def analyticsReceiveSessionListItem(self, correlationID, payload):
+    def metricsReceiveSessionListItem(self, correlationID, payload):
         log.msg("Received session list item: %s" % framing.decodePayload(payload)[0])
 
 

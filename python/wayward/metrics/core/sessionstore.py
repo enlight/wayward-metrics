@@ -6,7 +6,7 @@
 """
 
 import os
-from wayward.analytics.core import session
+from wayward.metrics.core import session
 
 class SessionStore(object):
     def __init__(self):

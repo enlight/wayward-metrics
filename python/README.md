@@ -1,4 +1,4 @@
-Wayward Analytics - Python
+Wayward Metrics - Python
 ==========================
 
 Installation

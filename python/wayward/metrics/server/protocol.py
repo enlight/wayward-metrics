@@ -6,24 +6,24 @@
 """
 
 from twisted.python import log
-from wayward.analytics.core import constants, framing, protocol
+from wayward.metrics.core import constants, framing, protocol
 
-class AnalyticsServerProtocol(protocol.AnalyticsProtocolBase):
+class MetricsServerProtocol(protocol.MetricsProtocolBase):
     dispatchTable = {
-        constants.METHOD_RECEIVE_RESULT:         'analyticsReceiveResult',
-        constants.METHOD_START_SESSION:          'analyticsStartSession',
-        constants.METHOD_SET_PROTOCOL_VERSION:   'analyticsSetProtocolVersion',
-        constants.METHOD_RECORD_DATA:            'analyticsRecordData',
-        constants.METHOD_OBSERVE_SESSION:        'analyticsObserveSession',
-        constants.METHOD_STOP_OBSERVING_SESSION: 'analyticsStopObservingSession',
-        constants.METHOD_RETRIEVE_SESSION:       'analyticsRetrieveSession',
-        constants.METHOD_DELETE_SESSION:         'analyticsDeleteSession',
-        constants.METHOD_LIST_SESSIONS:          'analyticsListSessions',
+        constants.METHOD_RECEIVE_RESULT:         'metricsReceiveResult',
+        constants.METHOD_START_SESSION:          'metricsStartSession',
+        constants.METHOD_SET_PROTOCOL_VERSION:   'metricsSetProtocolVersion',
+        constants.METHOD_RECORD_DATA:            'metricsRecordData',
+        constants.METHOD_OBSERVE_SESSION:        'metricsObserveSession',
+        constants.METHOD_STOP_OBSERVING_SESSION: 'metricsStopObservingSession',
+        constants.METHOD_RETRIEVE_SESSION:       'metricsRetrieveSession',
+        constants.METHOD_DELETE_SESSION:         'metricsDeleteSession',
+        constants.METHOD_LIST_SESSIONS:          'metricsListSessions',
     }
 
 
     def __init__(self, factory):
-        protocol.AnalyticsProtocolBase.__init__(self)
+        protocol.MetricsProtocolBase.__init__(self)
         self.factory = factory
         self.session = None
         self.protocolVersion = 0
@@ -36,11 +36,11 @@ class AnalyticsServerProtocol(protocol.AnalyticsProtocolBase):
             self.session = None
 
 
-    def analyticsSetAuthorizationCredentials(self, correlationID, payload):
+    def metricsSetAuthorizationCredentials(self, correlationID, payload):
         pass
 
 
-    def analyticsStartSession(self, correlationID, payload):
+    def metricsStartSession(self, correlationID, payload):
         if not self.session:
             (sessionID,) = framing.decodePayload(payload)
             log.msg("Starting session %s" % sessionID)
@@ -50,12 +50,12 @@ class AnalyticsServerProtocol(protocol.AnalyticsProtocolBase):
             return (False, constants.ERROR_ALREADY_IN_SESSION, '')
 
 
-    def analyticsSetProtocolVersion(self, correlationID, payload):
+    def metricsSetProtocolVersion(self, correlationID, payload):
         (self.protocolVersion,) = framing.decodePayload(payload)
         return (True, constants.RESULT_NONE, '')
 
 
-    def analyticsRecordData(self, correlationID, buffer):
+    def metricsRecordData(self, correlationID, buffer):
         self.session.recordData(buffer)
         # No result so that we don't have a lot of useless traffic. Errors in
         # recording data need to be dealt with in some other manner (like
@@ -63,23 +63,23 @@ class AnalyticsServerProtocol(protocol.AnalyticsProtocolBase):
         return None
 
 
-    def analyticsObserveSession(self, correlationID, payload):
+    def metricsObserveSession(self, correlationID, payload):
         pass
 
 
-    def analyticsStopObservingSession(self, correlationID, payload):
+    def metricsStopObservingSession(self, correlationID, payload):
         pass
 
 
-    def analyticsRetrieveSession(self, correlationID, payload):
+    def metricsRetrieveSession(self, correlationID, payload):
         pass
 
 
-    def analyticsDeleteSession(self, correlationID, payload):
+    def metricsDeleteSession(self, correlationID, payload):
         pass
 
 
-    def analyticsListSessions(self, correlationID, payload):
+    def metricsListSessions(self, correlationID, payload):
         (flags,) = framing.decodePayload(payload)
         sessions = self.factory.sessionStore.getSessions(**flags)
         log.msg("Sending sessions... %s" % sessions)
