@@ -62,3 +62,17 @@ them.
 Currently, we have a prototype implementation in Python.  Once the basics
 are working in Python, we will provide a C / C++ reporting library.
 
+Inspiration
+-----------
+
+My work on this has been inspired by other software that I have used
+or admired in the past.
+
+This includes:
+
+   * [Haskell ThreadScope](http://code.haskell.org/ThreadScope/)
+   * [GC Spy](http://www.cs.kent.ac.uk/projects/gc/gcspy/) ([and link at Sun](http://research.sun.com/projects/gcspy/))
+   * [Deja Insight](http://www.dejatools.com/dejainsight)
+   * [Google Speed Tracer](http://code.google.com/webtoolkit/speedtracer/)
+   * [the net panel in Firebug](http://getfirebug.com/net.html)
+
