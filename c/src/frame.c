@@ -4,16 +4,16 @@
 #include <string.h>
 #include <unistd.h>
 
-struct wayward_metrics_frame_t_ {
+struct wwm_frame_t_ {
     int32_t         message_type;
     int32_t         correlation_id;
     size_t          length;
     unsigned char   payload[0];
 };
 
-wayward_metrics_frame_t wayward_metrics_frame_new(int32_t message_type, int32_t correlation_id, size_t initial_size, unsigned char * payload)
+wwm_frame_t wwm_frame_new(int32_t message_type, int32_t correlation_id, size_t initial_size, unsigned char * payload)
 {
-    wayward_metrics_frame_t frame = (wayward_metrics_frame_t)malloc(sizeof(struct wayward_metrics_frame_t_) + initial_size * sizeof(unsigned char));
+    wwm_frame_t frame = (wwm_frame_t)malloc(sizeof(struct wwm_frame_t_) + initial_size * sizeof(unsigned char));
     if (NULL == frame)
     {
         return NULL;
@@ -26,7 +26,7 @@ wayward_metrics_frame_t wayward_metrics_frame_new(int32_t message_type, int32_t 
     return frame;
 }
 
-void wayward_metrics_frame_destroy(wayward_metrics_frame_t frame)
+void wwm_frame_destroy(wwm_frame_t frame)
 {
     free(frame);
 }

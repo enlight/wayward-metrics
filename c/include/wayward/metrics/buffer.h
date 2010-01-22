@@ -4,14 +4,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct wayward_metrics_buffer_t_ * wayward_metrics_buffer_t;
+typedef struct wwm_buffer_t_ * wwm_buffer_t;
 
-extern wayward_metrics_buffer_t wayward_metrics_buffer_new(size_t initial_size);
-extern wayward_metrics_buffer_t wayward_metrics_buffer_resize(wayward_metrics_buffer_t buf, size_t new_size);
-extern void                     wayward_metrics_buffer_destroy(wayward_metrics_buffer_t buf);
+extern wwm_buffer_t             wwm_buffer_new(size_t initial_size);
+extern wwm_buffer_t             wwm_buffer_resize(wwm_buffer_t buf, size_t new_size);
+extern void                     wwm_buffer_destroy(wwm_buffer_t buf);
 
-extern const unsigned char *    wayward_metrics_buffer_bytes(const wayward_metrics_buffer_t buf);
-extern size_t                   wayward_metrics_buffer_length(const wayward_metrics_buffer_t buf);
+extern const unsigned char *    wwm_buffer_bytes(const wwm_buffer_t buf);
+extern size_t                   wwm_buffer_length(const wwm_buffer_t buf);
 
 #endif
 

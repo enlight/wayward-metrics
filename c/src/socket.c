@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-int wayward_metrics_open_socket(char const *hostname,
+int wwm_open_socket(char const *hostname,
                                 int portnumber)
 {
     int sockfd;
