@@ -4,12 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct wayward_metrics_frame_t_ {
-    int32_t         message_type;
-    int32_t         correlation_id;
-    size_t          length;
-    unsigned char   payload[0];
-} *wayward_metrics_frame_t;
+typedef struct wayward_metrics_frame_t_ *wayward_metrics_frame_t;
 
 extern wayward_metrics_frame_t wayward_metrics_frame_new(int32_t message_type, int32_t correlation_id, size_t initial_size, unsigned char * payload);
 extern void wayward_metrics_frame_destroy(wayward_metrics_frame_t frame);

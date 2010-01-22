@@ -4,6 +4,13 @@
 #include <string.h>
 #include <unistd.h>
 
+struct wayward_metrics_frame_t_ {
+    int32_t         message_type;
+    int32_t         correlation_id;
+    size_t          length;
+    unsigned char   payload[0];
+};
+
 wayward_metrics_frame_t wayward_metrics_frame_new(int32_t message_type, int32_t correlation_id, size_t initial_size, unsigned char * payload)
 {
     wayward_metrics_frame_t frame = (wayward_metrics_frame_t)malloc(sizeof(struct wayward_metrics_frame_t_) + initial_size * sizeof(unsigned char));
