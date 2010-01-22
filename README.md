@@ -1,4 +1,4 @@
-Wayward Analytics
+Wayward Metrics
 =================
 
 Overview
