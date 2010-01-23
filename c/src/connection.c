@@ -39,13 +39,13 @@ void wwm_connection_destroy(wwm_connection_t conn)
 }
 
 int wwm_connection_handle_input(wwm_connection_t conn,
-                                            wwm_frame_t decoded_frame)
+                                wwm_frame_t decoded_frame)
 {
     return 0;
 }
 
 int wwm_connection_send_frame(wwm_connection_t conn,
-                                          const wwm_frame_t frame)
+                              const wwm_frame_t frame)
 {
     wwm_buffer_t encoded;
     // XXX: Implement encoding the frame ...
