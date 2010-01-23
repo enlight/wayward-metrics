@@ -1,6 +1,16 @@
 Wayward Metrics - C
 ==========================
 
+Platform Support
+----------------
+
+Currently, this is only tested to build on MacOS X. In the future, we will support,
+at a minimum, these platforms:
+
+   * Windows
+   * Mac OS X
+   * Linux
+
 Build
 -----
 
