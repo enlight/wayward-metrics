@@ -12,6 +12,9 @@
 typedef struct _wwm_per_thread_queue_t_ *_wwm_per_thread_queue_t;
 typedef struct _wwm_per_thread_queue_node_t_ *_wwm_per_thread_queue_node_t;
 
+//------------------------------------------------------------------------------
+/**
+*/
 struct wwm_message_queue_t_
 {
     wwm_connection_t        connection;
@@ -22,12 +25,18 @@ struct wwm_message_queue_t_
     volatile bool           shutdown_requested;
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
 struct _wwm_per_thread_queue_node_t_
 {
     wwm_frame_t                     value;
     _wwm_per_thread_queue_node_t    next;
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
 struct _wwm_per_thread_queue_t_
 {
     wwm_message_queue_t             owner;
@@ -48,7 +57,11 @@ static void                     _wwm_per_thread_queue_enqueue(_wwm_per_thread_qu
 static _wwm_per_thread_queue_node_t _wwm_per_thread_queue_node_new(void);
 static void                         _wwm_per_thread_queue_node_destroy(_wwm_per_thread_queue_node_t node);
 
-wwm_message_queue_t wwm_message_queue_new(wwm_connection_t connection)
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_message_queue_t
+wwm_message_queue_new(wwm_connection_t connection)
 {
     wwm_message_queue_t queue = (wwm_message_queue_t)malloc(sizeof(struct wwm_message_queue_t_));
     memset(queue, 0, sizeof(struct wwm_message_queue_t_));
@@ -60,20 +73,32 @@ wwm_message_queue_t wwm_message_queue_new(wwm_connection_t connection)
     return queue;
 }
 
-void wwm_message_queue_destroy(wwm_message_queue_t queue)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_message_queue_destroy(wwm_message_queue_t queue)
 {
     // Need to also shutdown the background thread...
     (void)pthread_key_delete(queue->per_thread_queue_key);
     free(queue);
 }
 
-void* _wwm_message_queue_start(void* queue)
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+_wwm_message_queue_start(void* queue)
 {
     _wwm_message_queue_run((wwm_message_queue_t)queue);
     return NULL; // Implied pthread_exit(NULL)
 }
 
-void _wwm_message_queue_run(wwm_message_queue_t queue)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_message_queue_run(wwm_message_queue_t queue)
 {
     while (FALSE == queue->shutdown_requested)
     {
@@ -81,7 +106,11 @@ void _wwm_message_queue_run(wwm_message_queue_t queue)
     }
 }
 
-void wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_frame_t frame)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_frame_t frame)
 {
     _wwm_per_thread_queue_t ptqueue = pthread_getspecific(queue->per_thread_queue_key);
     if (NULL == ptqueue)
@@ -92,7 +121,11 @@ void wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_frame_t frame)
     _wwm_per_thread_queue_enqueue(ptqueue, frame);
 }
 
-_wwm_per_thread_queue_t _wwm_per_thread_queue_new(wwm_message_queue_t owner)
+//------------------------------------------------------------------------------
+/**
+*/
+_wwm_per_thread_queue_t
+_wwm_per_thread_queue_new(wwm_message_queue_t owner)
 {
     _wwm_per_thread_queue_t ptqueue = (_wwm_per_thread_queue_t)malloc(sizeof(struct _wwm_per_thread_queue_t_));
     ptqueue->owner = owner;
@@ -102,17 +135,29 @@ _wwm_per_thread_queue_t _wwm_per_thread_queue_new(wwm_message_queue_t owner)
     return ptqueue;
 }
 
-void _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t per_thread_queue)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t per_thread_queue)
 {
     // XXX: Destroy any remaining items in the queue?
 }
 
-void _wwm_per_thread_queue_kill(void* per_thread_queue)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_per_thread_queue_kill(void* per_thread_queue)
 {
     ((_wwm_per_thread_queue_t)per_thread_queue)->thread_exited = TRUE;
 }
 
-void _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_frame_t frame)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_frame_t frame)
 {
     _wwm_per_thread_queue_node_t node = _wwm_per_thread_queue_node_new();
     node->value = frame;
@@ -121,7 +166,11 @@ void _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm
     per_thread_queue->tail = node;
 }
 
-wwm_frame_t _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue)
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_frame_t
+_wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue)
 {
     _wwm_per_thread_queue_node_t node = per_thread_queue->head;
     _wwm_per_thread_queue_node_t next_head = node->next;
@@ -136,13 +185,21 @@ wwm_frame_t _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_que
     return frame;
 }
 
-_wwm_per_thread_queue_node_t _wwm_per_thread_queue_node_new(void)
+//------------------------------------------------------------------------------
+/**
+*/
+_wwm_per_thread_queue_node_t
+_wwm_per_thread_queue_node_new(void)
 {
     _wwm_per_thread_queue_node_t node = (_wwm_per_thread_queue_node_t)malloc(sizeof(struct _wwm_per_thread_queue_node_t_));
     return node;
 }
 
-void _wwm_per_thread_queue_node_destroy(_wwm_per_thread_queue_node_t node)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_per_thread_queue_node_destroy(_wwm_per_thread_queue_node_t node)
 {
     free(node);
 }

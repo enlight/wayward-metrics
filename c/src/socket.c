@@ -7,8 +7,12 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-int wwm_open_socket(char const *hostname,
-                                int portnumber)
+//------------------------------------------------------------------------------
+/**
+*/
+int
+wwm_open_socket(char const *hostname,
+                int portnumber)
 {
     int sockfd;
     struct sockaddr_in addr;

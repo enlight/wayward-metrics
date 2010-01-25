@@ -4,6 +4,9 @@
 #include <string.h>
 #include <unistd.h>
 
+//------------------------------------------------------------------------------
+/**
+*/
 struct wwm_buffer_t_
 {
     size_t          size;           ///< Size of the allocated storage.
@@ -11,7 +14,11 @@ struct wwm_buffer_t_
     unsigned char   bytes[0];
 };
 
-wwm_buffer_t wwm_buffer_new(size_t initial_size)
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_buffer_new(size_t initial_size)
 {
     wwm_buffer_t buf = (wwm_buffer_t)malloc(sizeof(struct wwm_buffer_t_) + initial_size * sizeof(unsigned char));
     if (NULL == buf)
@@ -24,7 +31,11 @@ wwm_buffer_t wwm_buffer_new(size_t initial_size)
     return buf;
 }
 
-wwm_buffer_t wwm_buffer_resize(wwm_buffer_t buf, size_t new_size)
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_buffer_resize(wwm_buffer_t buf, size_t new_size)
 {
     // XXX: This doesn't bother with shrinking currently.
     if (buf->size < new_size)
@@ -37,17 +48,29 @@ wwm_buffer_t wwm_buffer_resize(wwm_buffer_t buf, size_t new_size)
     return buf;
 }
 
-void wwm_buffer_destroy(wwm_buffer_t buf)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_buffer_destroy(wwm_buffer_t buf)
 {
     free(buf);
 }
 
-const unsigned char * wwm_buffer_bytes(const wwm_buffer_t buf)
+//------------------------------------------------------------------------------
+/**
+*/
+const unsigned char*
+wwm_buffer_bytes(const wwm_buffer_t buf)
 {
     return buf->bytes;
 }
 
-size_t wwm_buffer_length(const wwm_buffer_t buf)
+//------------------------------------------------------------------------------
+/**
+*/
+size_t
+wwm_buffer_length(const wwm_buffer_t buf)
 {
     return buf->length;
 }
