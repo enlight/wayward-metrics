@@ -80,8 +80,13 @@ wwm_message_queue_new(wwm_connection_t connection)
 void
 wwm_message_queue_destroy(wwm_message_queue_t queue)
 {
-    // Need to also shutdown the background thread...
+    queue->shutdown_requested = TRUE;
+    (void)pthread_join(queue->background_thread, NULL);
+
+    (void)pthread_attr_destroy(&(queue->background_thread_attr));
+
     (void)pthread_key_delete(queue->per_thread_queue_key);
+
     free(queue);
 }
 
