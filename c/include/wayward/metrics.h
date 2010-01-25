@@ -6,6 +6,7 @@
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/connection.h"
 #include "wayward/metrics/frame.h"
+#include "wayward/metrics/message_queue.h"
 #include "wayward/metrics/socket.h"
 #include "wayward/metrics/version.h"
 
