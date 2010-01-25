@@ -177,6 +177,7 @@ _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_fram
     _wwm_per_thread_queue_node_t node = _wwm_per_thread_queue_node_new();
     node->value = frame;
     node->next = NULL;
+    __sync_synchronize();
     per_thread_queue->tail->next = node;
     per_thread_queue->tail = node;
 }
