@@ -189,7 +189,7 @@ _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue)
         // queue was empty.
         return NULL;
     }
-    wwm_frame_t frame = node->value; // Pseudo code has this as next_head->value, but I think it is wrong.
+    wwm_frame_t frame = next_head->value;
     per_thread_queue->head = next_head;
     _wwm_per_thread_queue_node_destroy(node);
     return frame;
