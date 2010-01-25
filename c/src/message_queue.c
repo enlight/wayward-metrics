@@ -53,6 +53,7 @@ static _wwm_per_thread_queue_t  _wwm_per_thread_queue_new(wwm_message_queue_t ow
 static void                     _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t);
 static void                     _wwm_per_thread_queue_kill(void*);
 static void                     _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t, wwm_frame_t);
+static wwm_frame_t              _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue);
 
 static _wwm_per_thread_queue_node_t _wwm_per_thread_queue_node_new(void);
 static void                         _wwm_per_thread_queue_node_destroy(_wwm_per_thread_queue_node_t node);
@@ -119,6 +120,15 @@ wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_frame_t frame)
         pthread_setspecific(queue->per_thread_queue_key, ptqueue);
     }
     _wwm_per_thread_queue_enqueue(ptqueue, frame);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_message_queue_request_shutdown(wwm_message_queue_t queue)
+{
+    queue->shutdown_requested = TRUE;
 }
 
 //------------------------------------------------------------------------------
