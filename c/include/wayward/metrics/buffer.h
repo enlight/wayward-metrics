@@ -15,6 +15,8 @@ extern wwm_buffer_t             wwm_buffer_ensure(wwm_buffer_t buf, size_t space
 extern const unsigned char *    wwm_buffer_bytes(const wwm_buffer_t buf);
 extern size_t                   wwm_buffer_length(const wwm_buffer_t buf);
 
+extern wwm_buffer_t             wwm_buffer_append_int8(wwm_buffer_t buf, int8_t value);
+extern wwm_buffer_t             wwm_buffer_append_int16(wwm_buffer_t buf, int16_t value);
 extern wwm_buffer_t             wwm_buffer_append_int32(wwm_buffer_t buf, int32_t value);
 extern wwm_buffer_t             wwm_buffer_append_bytes(wwm_buffer_t buf, const unsigned char * bytes, size_t length);
 

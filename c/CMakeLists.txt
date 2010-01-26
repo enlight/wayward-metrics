@@ -7,6 +7,7 @@ ENDIF(APPLE)
 
 include_directories(${WAYWARD_METRICS_SOURCE_DIR}/include)
 add_library(waywardmetrics
+            src/bert_encode.c
             src/buffer.c
             src/connection.c
             src/frame.c

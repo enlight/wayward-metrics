@@ -93,6 +93,32 @@ wwm_buffer_length(const wwm_buffer_t buf)
 /**
 */
 wwm_buffer_t
+wwm_buffer_append_int8(wwm_buffer_t buf, int8_t value)
+{
+    buf = wwm_buffer_ensure(buf, 1);
+    memcpy(buf->bytes + buf->length, &value, 1);
+    buf->length += 1;
+    return buf;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_buffer_append_int16(wwm_buffer_t buf, int16_t value)
+{
+    int16_t network_value = htons(value);
+
+    buf = wwm_buffer_ensure(buf, 2);
+    memcpy(buf->bytes + buf->length, &network_value, 2);
+    buf->length += 2;
+    return buf;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
 wwm_buffer_append_int32(wwm_buffer_t buf, int32_t value)
 {
     int32_t network_value = htonl(value);
