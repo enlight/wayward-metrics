@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 //------------------------------------------------------------------------------
 /**
@@ -11,26 +10,21 @@ struct wwm_frame_t_ {
     wwm_frame_t     next;
     int32_t         message_type;
     int32_t         correlation_id;
-    size_t          length;
-    unsigned char   payload[0];
+    wwm_buffer_t    payload;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 wwm_frame_t
-wwm_frame_new(int32_t message_type, int32_t correlation_id, size_t initial_size, unsigned char * payload)
+wwm_frame_new(void)
 {
-    wwm_frame_t frame = (wwm_frame_t)malloc(sizeof(struct wwm_frame_t_) + initial_size * sizeof(unsigned char));
+    wwm_frame_t frame = (wwm_frame_t)malloc(sizeof(struct wwm_frame_t_));
     if (NULL == frame)
     {
         return NULL;
     }
-    frame->message_type = message_type;
-    frame->correlation_id = correlation_id;
-    frame->length = initial_size;
-    memcpy(frame->payload, payload, initial_size);
-    
+    memset(frame, 0, sizeof(struct wwm_frame_t_));
     return frame;
 }
 
@@ -40,7 +34,36 @@ wwm_frame_new(int32_t message_type, int32_t correlation_id, size_t initial_size,
 void
 wwm_frame_destroy(wwm_frame_t frame)
 {
+    if (NULL != frame->payload)
+    {
+        wwm_buffer_destroy(frame->payload);
+    }
     free(frame);
+}
+
+//------------------------------------------------------------------------------
+/**
+    The frame must have been reset or newly created before this is called.
+*/
+void
+wwm_frame_setup(wwm_frame_t frame, int32_t message_type, int32_t correlation_id, wwm_buffer_t payload)
+{
+    frame->message_type = message_type;
+    frame->correlation_id = correlation_id;
+    frame->payload = payload;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_frame_reset(wwm_frame_t frame)
+{
+    if (NULL != frame->payload)
+    {
+        wwm_buffer_destroy(frame->payload);
+    }
+    memset(frame, 0, sizeof(struct wwm_frame_t_));
 }
 
 //------------------------------------------------------------------------------
@@ -61,4 +84,22 @@ wwm_frame_get_next(wwm_frame_t frame)
     return frame->next;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_frame_set_payload(wwm_frame_t frame, wwm_buffer_t payload)
+{
+    frame->payload = payload;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const wwm_buffer_t
+wwm_frame_get_payload(const wwm_frame_t frame)
+{
+    return frame->payload;
+}
 

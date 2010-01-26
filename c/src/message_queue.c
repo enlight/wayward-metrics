@@ -131,7 +131,7 @@ _wwm_per_thread_queue_new(wwm_message_queue_t owner)
 {
     _wwm_per_thread_queue_t ptqueue = (_wwm_per_thread_queue_t)malloc(sizeof(struct _wwm_per_thread_queue_t_));
     ptqueue->owner = owner;
-    ptqueue->head = ptqueue->tail = wwm_frame_new(0, 0, 0, NULL);
+    ptqueue->head = ptqueue->tail = wwm_frame_new();
     ptqueue->thread_exited = FALSE;
     ptqueue->next = NULL;
     return ptqueue;
