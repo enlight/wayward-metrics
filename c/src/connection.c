@@ -72,9 +72,10 @@ int
 wwm_connection_send_frame(wwm_connection_t conn,
                           const wwm_frame_t frame)
 {
-    wwm_buffer_t encoded;
+    wwm_buffer_t encoded = wwm_buffer_new(0);
     // XXX: Implement encoding the frame ...
     write(conn->sockfd, wwm_buffer_bytes(encoded), wwm_buffer_length(encoded));
+    wwm_buffer_destroy(encoded);
     return 0;
 }
 
