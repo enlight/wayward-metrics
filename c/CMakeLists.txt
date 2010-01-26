@@ -12,6 +12,7 @@ add_library(waywardmetrics
             src/connection.c
             src/frame.c
             src/message_queue.c
+            src/reporting/base.c
             src/socket.c
             src/version.c
            )
