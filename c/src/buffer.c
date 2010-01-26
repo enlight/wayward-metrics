@@ -34,6 +34,15 @@ wwm_buffer_new(size_t initial_size)
 //------------------------------------------------------------------------------
 /**
 */
+void
+wwm_buffer_destroy(wwm_buffer_t buf)
+{
+    free(buf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 wwm_buffer_t
 wwm_buffer_resize(wwm_buffer_t buf, size_t new_size)
 {
@@ -51,10 +60,15 @@ wwm_buffer_resize(wwm_buffer_t buf, size_t new_size)
 //------------------------------------------------------------------------------
 /**
 */
-void
-wwm_buffer_destroy(wwm_buffer_t buf)
+wwm_buffer_t
+wwm_buffer_ensure(wwm_buffer_t buf, size_t space_needed)
 {
-    free(buf);
+    size_t space_available = buf->size - buf->length;
+    if (space_available < space_needed)
+    {
+        buf = wwm_buffer_resize(buf, buf->length + space_needed);
+    }
+    return buf;
 }
 
 //------------------------------------------------------------------------------
@@ -73,5 +87,31 @@ size_t
 wwm_buffer_length(const wwm_buffer_t buf)
 {
     return buf->length;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_buffer_append_int32(wwm_buffer_t buf, int32_t value)
+{
+    int32_t network_value = htonl(value);
+
+    buf = wwm_buffer_ensure(buf, 4);
+    memcpy(buf->bytes + buf->length, &network_value, 4);
+    buf->length += 4;
+    return buf;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_buffer_append_bytes(wwm_buffer_t buf, const unsigned char * bytes, size_t length)
+{
+    buf = wwm_buffer_ensure(buf, length);
+    memcpy(buf->bytes + buf->length, bytes, length);
+    buf->length += length;
+    return buf;
 }
 

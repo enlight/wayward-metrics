@@ -13,6 +13,8 @@ struct wwm_frame_t_ {
     wwm_buffer_t    payload;
 };
 
+static size_t       _wwm_frame_encoded_size(wwm_frame_t frame);
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -63,6 +65,38 @@ wwm_frame_reset(wwm_frame_t frame)
         wwm_buffer_destroy(frame->payload);
     }
     memset(frame, 0, sizeof(struct wwm_frame_t_));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_frame_encode(const wwm_frame_t frame, wwm_buffer_t buffer)
+{
+    size_t space_needed = _wwm_frame_encoded_size(frame);
+    buffer = wwm_buffer_ensure(buffer, space_needed);
+    buffer = wwm_buffer_append_int32(buffer, space_needed - sizeof(int32_t)); // -4 for space_needed
+    buffer = wwm_buffer_append_int32(buffer, frame->message_type);
+    buffer = wwm_buffer_append_int32(buffer, frame->correlation_id);
+    if (NULL != frame->payload)
+    {
+        buffer = wwm_buffer_append_bytes(buffer, wwm_buffer_bytes(frame->payload), wwm_buffer_length(frame->payload));
+    }
+    return buffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static size_t
+_wwm_frame_encoded_size(wwm_frame_t frame)
+{
+    size_t encoded_size = sizeof(int32_t) + sizeof(frame->message_type) + sizeof(frame->correlation_id);
+    if (NULL != frame->payload)
+    {
+         encoded_size += wwm_buffer_length(frame->payload);
+    }
+    return encoded_size;
 }
 
 //------------------------------------------------------------------------------

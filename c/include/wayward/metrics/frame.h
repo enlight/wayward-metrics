@@ -14,6 +14,8 @@ extern void         wwm_frame_destroy(wwm_frame_t frame);
 extern void         wwm_frame_setup(wwm_frame_t frame, int32_t message_type, int32_t correlation_id, wwm_buffer_t payload);
 extern void         wwm_frame_reset(wwm_frame_t frame);
 
+extern wwm_buffer_t wwm_frame_encode(const wwm_frame_t frame, wwm_buffer_t buffer);
+
 extern void         wwm_frame_set_next(wwm_frame_t frame, wwm_frame_t next);
 extern wwm_frame_t  wwm_frame_get_next(wwm_frame_t frame);
 
