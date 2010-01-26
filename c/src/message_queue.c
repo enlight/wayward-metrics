@@ -37,6 +37,8 @@ struct _wwm_per_thread_queue_t_
 
 static void                   * _wwm_message_queue_start(void* queue);
 static void                     _wwm_message_queue_run(wwm_message_queue_t queue);
+static void                     _wwm_message_queue_add_per_thread_queue(wwm_message_queue_t queue, _wwm_per_thread_queue_t per_thread_queue);
+static void                     _wwm_message_queue_remove_per_thread_queue(wwm_message_queue_t queue, _wwm_per_thread_queue_t per_thread_queue);
 
 static _wwm_per_thread_queue_t  _wwm_per_thread_queue_new(wwm_message_queue_t owner);
 static void                     _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t);
@@ -51,6 +53,9 @@ wwm_message_queue_t
 wwm_message_queue_new(wwm_connection_t connection)
 {
     wwm_message_queue_t queue = (wwm_message_queue_t)calloc(1, sizeof(struct wwm_message_queue_t_));
+
+    queue->connection = connection;
+
     (void)pthread_key_create(&(queue->per_thread_queue_key), _wwm_per_thread_queue_kill);
 
     (void)pthread_attr_init(&(queue->background_thread_attr));
@@ -71,6 +76,8 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
     (void)pthread_attr_destroy(&(queue->background_thread_attr));
 
     (void)pthread_key_delete(queue->per_thread_queue_key);
+
+    wwm_connection_destroy(queue->connection);
 
     free(queue);
 }
@@ -93,7 +100,16 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
 {
     while (FALSE == queue->shutdown_requested)
     {
-        // Iterate over the per-thread queues, pull the frames off of them and send them to the network connection.
+        _wwm_per_thread_queue_t ptq;
+        for (ptq = queue->per_thread_queue_slist; NULL != ptq; ptq = ptq->next)
+        {
+            wwm_frame_t frame = _wwm_per_thread_queue_dequeue(ptq);
+            while (NULL != frame)
+            {
+                wwm_connection_send_frame(queue->connection, frame);
+                frame = _wwm_per_thread_queue_dequeue(ptq);
+            }
+        }
     }
 }
 
@@ -124,6 +140,51 @@ wwm_message_queue_request_shutdown(wwm_message_queue_t queue)
 //------------------------------------------------------------------------------
 /**
 */
+static void
+_wwm_message_queue_add_per_thread_queue(wwm_message_queue_t queue, _wwm_per_thread_queue_t per_thread_queue)
+{
+    if (NULL == queue->per_thread_queue_slist)
+    {
+        queue->per_thread_queue_slist = per_thread_queue;
+    }
+    else
+    {
+        _wwm_per_thread_queue_t tail = queue->per_thread_queue_slist;
+        while (NULL != tail->next)
+        {
+            tail = tail->next;
+        }
+        tail->next = per_thread_queue;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+_wwm_message_queue_remove_per_thread_queue(wwm_message_queue_t queue, _wwm_per_thread_queue_t per_thread_queue)
+{
+    if (per_thread_queue == queue->per_thread_queue_slist)
+    {
+        queue->per_thread_queue_slist = per_thread_queue->next;
+    }
+    else
+    {
+        _wwm_per_thread_queue_t ptq;
+        for (ptq = queue->per_thread_queue_slist; NULL != ptq->next; ptq = ptq->next)
+        {
+            if (per_thread_queue == ptq->next)
+            {
+                ptq->next = per_thread_queue->next;
+                break;
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 static _wwm_per_thread_queue_t
 _wwm_per_thread_queue_new(wwm_message_queue_t owner)
 {
@@ -132,6 +193,9 @@ _wwm_per_thread_queue_new(wwm_message_queue_t owner)
     ptqueue->head = ptqueue->tail = wwm_frame_new();
     ptqueue->thread_exited = FALSE;
     ptqueue->next = NULL;
+
+    _wwm_message_queue_add_per_thread_queue(owner, ptqueue);
+
     return ptqueue;
 }
 
@@ -141,6 +205,8 @@ _wwm_per_thread_queue_new(wwm_message_queue_t owner)
 static void
 _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t per_thread_queue)
 {
+    _wwm_message_queue_remove_per_thread_queue(per_thread_queue->owner, per_thread_queue);
+
     // XXX: Destroy any remaining items in the queue?
 }
 
