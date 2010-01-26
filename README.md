@@ -76,8 +76,9 @@ The various implementations for each language are in subdirectories here
 and have their own README outlining their dependencies and how to build
 them.
 
-Currently, we have a prototype implementation in Python.  Once the basics
-are working in Python, we will provide a C / C++ reporting library.
+We are currently working on implementations of the client in both Python
+and C.  The server is currently being implemented in Python. All of the
+work in Python is using the Twisted framework.
 
 Inspiration
 -----------
