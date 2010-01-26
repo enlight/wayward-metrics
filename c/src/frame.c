@@ -8,6 +8,7 @@
 /**
 */
 struct wwm_frame_t_ {
+    wwm_frame_t     next;
     int32_t         message_type;
     int32_t         correlation_id;
     size_t          length;
@@ -41,4 +42,23 @@ wwm_frame_destroy(wwm_frame_t frame)
 {
     free(frame);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_frame_set_next(wwm_frame_t frame, wwm_frame_t next)
+{
+    frame->next = next;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_frame_t
+wwm_frame_get_next(wwm_frame_t frame)
+{
+    return frame->next;
+}
+
 

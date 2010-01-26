@@ -10,7 +10,6 @@
 // but without the locks since we have a single reader and a single writer
 // thread for each queue.
 typedef struct _wwm_per_thread_queue_t_ *_wwm_per_thread_queue_t;
-typedef struct _wwm_per_thread_queue_node_t_ *_wwm_per_thread_queue_node_t;
 
 //------------------------------------------------------------------------------
 /**
@@ -28,20 +27,11 @@ struct wwm_message_queue_t_
 //------------------------------------------------------------------------------
 /**
 */
-struct _wwm_per_thread_queue_node_t_
-{
-    wwm_frame_t                     value;
-    _wwm_per_thread_queue_node_t    next;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
 struct _wwm_per_thread_queue_t_
 {
     wwm_message_queue_t             owner;
-    _wwm_per_thread_queue_node_t    head;
-    _wwm_per_thread_queue_node_t    tail;
+    wwm_frame_t                     head;
+    wwm_frame_t                     tail;
     bool                            thread_exited;
     _wwm_per_thread_queue_t         next;
 };
@@ -54,9 +44,6 @@ static void                     _wwm_per_thread_queue_destroy(_wwm_per_thread_qu
 static void                     _wwm_per_thread_queue_kill(void*);
 static void                     _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t, wwm_frame_t);
 static wwm_frame_t              _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue);
-
-static _wwm_per_thread_queue_node_t _wwm_per_thread_queue_node_new(void);
-static void                         _wwm_per_thread_queue_node_destroy(_wwm_per_thread_queue_node_t node);
 
 //------------------------------------------------------------------------------
 /**
@@ -144,7 +131,7 @@ _wwm_per_thread_queue_new(wwm_message_queue_t owner)
 {
     _wwm_per_thread_queue_t ptqueue = (_wwm_per_thread_queue_t)malloc(sizeof(struct _wwm_per_thread_queue_t_));
     ptqueue->owner = owner;
-    ptqueue->head = ptqueue->tail = _wwm_per_thread_queue_node_new();
+    ptqueue->head = ptqueue->tail = wwm_frame_new(0, 0, 0, NULL);
     ptqueue->thread_exited = FALSE;
     ptqueue->next = NULL;
     return ptqueue;
@@ -174,12 +161,9 @@ _wwm_per_thread_queue_kill(void* per_thread_queue)
 static void
 _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_frame_t frame)
 {
-    _wwm_per_thread_queue_node_t node = _wwm_per_thread_queue_node_new();
-    node->value = frame;
-    node->next = NULL;
     __sync_synchronize();
-    per_thread_queue->tail->next = node;
-    per_thread_queue->tail = node;
+    wwm_frame_set_next(per_thread_queue->tail, frame);
+    per_thread_queue->tail = frame;
 }
 
 //------------------------------------------------------------------------------
@@ -188,35 +172,15 @@ _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_fram
 static wwm_frame_t
 _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue)
 {
-    _wwm_per_thread_queue_node_t node = per_thread_queue->head;
-    _wwm_per_thread_queue_node_t next_head = node->next;
+    wwm_frame_t old_head = per_thread_queue->head;
+    wwm_frame_t next_head = wwm_frame_get_next(old_head);
     if (NULL == next_head)
     {
         // queue was empty.
         return NULL;
     }
-    wwm_frame_t frame = next_head->value;
     per_thread_queue->head = next_head;
-    _wwm_per_thread_queue_node_destroy(node);
-    return frame;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static _wwm_per_thread_queue_node_t
-_wwm_per_thread_queue_node_new(void)
-{
-    _wwm_per_thread_queue_node_t node = (_wwm_per_thread_queue_node_t)malloc(sizeof(struct _wwm_per_thread_queue_node_t_));
-    return node;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static void
-_wwm_per_thread_queue_node_destroy(_wwm_per_thread_queue_node_t node)
-{
-    free(node);
+    wwm_frame_destroy(old_head);
+    return next_head;
 }
 
