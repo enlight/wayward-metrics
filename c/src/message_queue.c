@@ -103,12 +103,15 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
         _wwm_per_thread_queue_t ptq;
         for (ptq = queue->per_thread_queue_slist; NULL != ptq; ptq = ptq->next)
         {
+            wwm_buffer_t buffer = wwm_buffer_new(5000);
             wwm_frame_t frame = _wwm_per_thread_queue_dequeue(ptq);
             while (NULL != frame)
             {
-                wwm_connection_send_frame(queue->connection, frame);
+                // XXX: Encode frame into buffer here...
                 frame = _wwm_per_thread_queue_dequeue(ptq);
             }
+            wwm_connection_send_buffer(queue->connection, buffer);
+            wwm_buffer_destroy(buffer);
         }
     }
 }

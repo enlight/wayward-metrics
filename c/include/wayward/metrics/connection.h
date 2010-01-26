@@ -1,6 +1,7 @@
 #ifndef _WAYWARD_METRICS_CONNECTION_H_
 #define _WAYWARD_METRICS_CONNECTION_H_
 
+#include "wayward/metrics/buffer.h"
 #include "wayward/metrics/frame.h"
 
 typedef struct wwm_connection_t_ *wwm_connection_t;
@@ -13,8 +14,8 @@ extern void                 wwm_connection_set_sockfd(wwm_connection_t conn, int
 
 extern int                  wwm_connection_handle_input(wwm_connection_t conn,
                                                         wwm_frame_t decoded_frame);
-extern int                  wwm_connection_send_frame(wwm_connection_t conn,
-                                                      const wwm_frame_t frame);
+extern int                  wwm_connection_send_buffer(wwm_connection_t conn,
+                                                       const wwm_buffer_t buffer);
 
 #endif
 

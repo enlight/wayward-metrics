@@ -69,13 +69,11 @@ wwm_connection_handle_input(wwm_connection_t conn,
 /**
 */
 int
-wwm_connection_send_frame(wwm_connection_t conn,
-                          const wwm_frame_t frame)
+wwm_connection_send_buffer(wwm_connection_t conn,
+                           const wwm_buffer_t buffer)
 {
-    wwm_buffer_t encoded = wwm_buffer_new(0);
-    // XXX: Implement encoding the frame ...
-    write(conn->sockfd, wwm_buffer_bytes(encoded), wwm_buffer_length(encoded));
-    wwm_buffer_destroy(encoded);
-    return 0;
+    int bytes_written = write(conn->sockfd, wwm_buffer_bytes(buffer), wwm_buffer_length(buffer));
+    // XXX: Check for errors...
+    return bytes_written;
 }
 
