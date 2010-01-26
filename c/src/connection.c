@@ -3,7 +3,6 @@
 #include "wayward/metrics/buffer.h"
 
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 //------------------------------------------------------------------------------
@@ -20,12 +19,11 @@ struct wwm_connection_t_
 wwm_connection_t
 wwm_connection_new(void)
 {
-    wwm_connection_t conn = (wwm_connection_t)malloc(sizeof(struct wwm_connection_t_));
+    wwm_connection_t conn = (wwm_connection_t)calloc(1, sizeof(struct wwm_connection_t_));
     if (NULL == conn)
     {
         return NULL;
     }
-    memset(conn, 0, sizeof(struct wwm_connection_t_));
 
     return conn;
 }

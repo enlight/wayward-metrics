@@ -19,12 +19,11 @@ struct wwm_frame_t_ {
 wwm_frame_t
 wwm_frame_new(void)
 {
-    wwm_frame_t frame = (wwm_frame_t)malloc(sizeof(struct wwm_frame_t_));
+    wwm_frame_t frame = (wwm_frame_t)calloc(1, sizeof(struct wwm_frame_t_));
     if (NULL == frame)
     {
         return NULL;
     }
-    memset(frame, 0, sizeof(struct wwm_frame_t_));
     return frame;
 }
 

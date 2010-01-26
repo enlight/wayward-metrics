@@ -2,7 +2,6 @@
 
 #include <pthread.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "wayward/metrics/config.h"
 
@@ -51,8 +50,7 @@ static wwm_frame_t              _wwm_per_thread_queue_dequeue(_wwm_per_thread_qu
 wwm_message_queue_t
 wwm_message_queue_new(wwm_connection_t connection)
 {
-    wwm_message_queue_t queue = (wwm_message_queue_t)malloc(sizeof(struct wwm_message_queue_t_));
-    memset(queue, 0, sizeof(struct wwm_message_queue_t_));
+    wwm_message_queue_t queue = (wwm_message_queue_t)calloc(1, sizeof(struct wwm_message_queue_t_));
     (void)pthread_key_create(&(queue->per_thread_queue_key), _wwm_per_thread_queue_kill);
 
     (void)pthread_attr_init(&(queue->background_thread_attr));
