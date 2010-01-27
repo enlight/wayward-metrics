@@ -14,8 +14,8 @@ struct wwm_buffer_t_
     unsigned char   bytes[0];
 };
 
-// Round 'a' up to the nearest multiple of 'm'
-#define ROUND_UP(a, m)          (((a) - 1) + (m) - (((a) - 1) % (m)))
+// Round 'a' up to the nearest multiple of 'm'. 'm' MUST be a power of 2.
+#define ROUND_UP(a, m)          ((a) + (m) - ((a) & ((m) - 1)))
 #define BUFFER_DATA_INCREMENT   512
 
 //------------------------------------------------------------------------------
