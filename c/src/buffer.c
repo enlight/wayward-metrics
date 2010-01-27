@@ -15,6 +15,7 @@ struct wwm_buffer_t_
 };
 
 // Round 'a' up to the nearest multiple of 'm'. 'm' MUST be a power of 2.
+// http://graphics.stanford.edu/~seander/bithacks.html#ModulusDivisionEasy
 #define ROUND_UP(a, m)          ((a) + (m) - ((a) & ((m) - 1)))
 #define BUFFER_DATA_INCREMENT   512
 
