@@ -3,6 +3,7 @@
 #include "wayward/metrics/bert_encode.h"
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/connection.h"
+#include "wayward/metrics/file.h"
 #include "wayward/metrics/frame.h"
 #include "wayward/metrics/message_queue.h"
 #include "wayward/metrics/reporting/constants.h"
@@ -21,14 +22,11 @@ struct wwm_reporter_t_
 /**
 */
 wwm_reporter_t
-wwm_reporter_new(const char *hostname, int portnumber)
+wwm_reporter_new(void)
 {
     wwm_reporter_t reporter = (wwm_reporter_t)calloc(1, sizeof(struct wwm_reporter_t_));
 
-    int sockfd = wwm_open_socket(hostname, portnumber);
-    wwm_connection_t conn = wwm_connection_new();
-    wwm_connection_set_sockfd(conn, sockfd);
-    reporter->message_queue = wwm_message_queue_new(conn);
+    reporter->message_queue = wwm_message_queue_new();
     return reporter;
 }
 
@@ -40,6 +38,29 @@ wwm_reporter_destroy(wwm_reporter_t reporter)
 {
     wwm_message_queue_destroy(reporter->message_queue);
     free(reporter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_reporter_log_to_network(wwm_reporter_t reporter, const char *hostname, int portnumber)
+{
+    int sockfd = wwm_open_socket(hostname, portnumber);
+    wwm_connection_t conn = wwm_connection_new();
+    wwm_connection_set_sockfd(conn, sockfd);
+    wwm_message_queue_set_connection(reporter->message_queue, conn);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_reporter_log_to_file(wwm_reporter_t reporter, const char *filename)
+{
+    wwm_file_t file = wwm_file_new();
+    wwm_file_open(file, filename, WWM_FILE_APPEND);
+    wwm_message_queue_set_file(reporter->message_queue, file);
 }
 
 //------------------------------------------------------------------------------

@@ -5,8 +5,11 @@
 
 typedef struct wwm_reporter_t_ *wwm_reporter_t;
 
-extern wwm_reporter_t   wwm_reporter_new(const char *hostname, int portnumber);
+extern wwm_reporter_t   wwm_reporter_new(void);
 extern void             wwm_reporter_destroy(wwm_reporter_t reporter);
+
+extern void             wwm_reporter_connect(wwm_reporter_t reporter, const char *hostname, int portnumber);
+extern void             wwm_reporter_log_to_file(wwm_reporter_t reporter, const char *filename);
 
 extern void             wwm_reporter_start_session(wwm_reporter_t reporter, const char *session_id);
 extern void             wwm_reporter_record_data(wwm_reporter_t reporter, wwm_buffer_t data);

@@ -16,6 +16,7 @@ typedef struct _wwm_per_thread_queue_t_ *_wwm_per_thread_queue_t;
 struct wwm_message_queue_t_
 {
     wwm_connection_t        connection;
+    wwm_file_t              file;
     pthread_key_t           per_thread_queue_key;
     pthread_t               background_thread;
     pthread_attr_t          background_thread_attr;
@@ -51,11 +52,12 @@ static wwm_frame_t              _wwm_per_thread_queue_dequeue(_wwm_per_thread_qu
 /**
 */
 wwm_message_queue_t
-wwm_message_queue_new(wwm_connection_t connection)
+wwm_message_queue_new(void)
 {
     wwm_message_queue_t queue = (wwm_message_queue_t)calloc(1, sizeof(struct wwm_message_queue_t_));
 
-    queue->connection = connection;
+    queue->connection = NULL;
+    queue->file = NULL;
     queue->send_buffer = wwm_buffer_new(5000);
 
     (void)pthread_key_create(&(queue->per_thread_queue_key), _wwm_per_thread_queue_kill);
@@ -79,11 +81,37 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
 
     (void)pthread_key_delete(queue->per_thread_queue_key);
 
-    wwm_connection_destroy(queue->connection);
+    if (NULL != queue->connection)
+    {
+        wwm_connection_destroy(queue->connection);
+    }
+
+    if (NULL != queue->file)
+    {
+        wwm_file_destroy(queue->file);
+    }
 
     wwm_buffer_destroy(queue->send_buffer);
 
     free(queue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_message_queue_set_connection(wwm_message_queue_t queue, wwm_connection_t conn)
+{
+    queue->connection = conn;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_message_queue_set_file(wwm_message_queue_t queue, wwm_file_t file)
+{
+    queue->file = file;
 }
 
 //------------------------------------------------------------------------------
@@ -116,14 +144,28 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
                 // XXX: Make this high water mark configurable:
                 if (wwm_buffer_length(queue->send_buffer) > 50000)
                 {
-                    wwm_connection_send_buffer(queue->connection, queue->send_buffer);
+                    if (NULL != queue->connection)
+                    {
+                        wwm_connection_send_buffer(queue->connection, queue->send_buffer);
+                    }
+                    if (NULL != queue->file)
+                    {
+                        wwm_file_send_buffer(queue->file, queue->send_buffer);
+                    }
                     wwm_buffer_reset(queue->send_buffer);
                 }
                 frame = _wwm_per_thread_queue_dequeue(ptq);
             }
             if (messages_handled > 0)
             {
-                wwm_connection_send_buffer(queue->connection, queue->send_buffer);
+                if (NULL != queue->connection)
+                {
+                    wwm_connection_send_buffer(queue->connection, queue->send_buffer);
+                }
+                if (NULL != queue->file)
+                {
+                    wwm_file_send_buffer(queue->file, queue->send_buffer);
+                }
                 wwm_buffer_reset(queue->send_buffer);
             }
         }
