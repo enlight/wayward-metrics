@@ -56,7 +56,7 @@ wwm_buffer_resize(wwm_buffer_t buf, size_t new_size)
     {
         size_t alloc_size = ROUND_UP(sizeof(struct wwm_buffer_t_) + new_size, BUFFER_DATA_INCREMENT);
         buf = realloc(buf, alloc_size);
-        buf->size = alloc_size;
+        buf->size = alloc_size - sizeof(struct wwm_buffer_t_);
         // This doesn't initialize any new memory in the bytes array.
     }
     return buf;
