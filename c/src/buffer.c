@@ -32,7 +32,6 @@ wwm_buffer_new(size_t initial_size)
     }
     buf->size = initial_size;
     buf->length = 0;
-    memset(buf->bytes, 0, initial_size);
     return buf;
 }
 
