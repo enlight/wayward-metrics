@@ -11,6 +11,7 @@ extern void                     wwm_buffer_destroy(wwm_buffer_t buf);
 
 extern wwm_buffer_t             wwm_buffer_resize(wwm_buffer_t buf, size_t new_size);
 extern wwm_buffer_t             wwm_buffer_ensure(wwm_buffer_t buf, size_t space_needed);
+extern void                     wwm_buffer_reset(wwm_buffer_t buf);
 
 extern const unsigned char *    wwm_buffer_bytes(const wwm_buffer_t buf);
 extern size_t                   wwm_buffer_length(const wwm_buffer_t buf);

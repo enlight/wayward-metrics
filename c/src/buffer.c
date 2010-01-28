@@ -79,6 +79,15 @@ wwm_buffer_ensure(wwm_buffer_t buf, size_t space_needed)
 //------------------------------------------------------------------------------
 /**
 */
+void
+wwm_buffer_reset(wwm_buffer_t buf)
+{
+    buf->length = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const unsigned char*
 wwm_buffer_bytes(const wwm_buffer_t buf)
 {
