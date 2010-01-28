@@ -20,6 +20,7 @@ struct wwm_message_queue_t_
     pthread_t               background_thread;
     pthread_attr_t          background_thread_attr;
     _wwm_per_thread_queue_t per_thread_queue_slist;
+    wwm_buffer_t            send_buffer;
     volatile bool           shutdown_requested;
 };
 
@@ -55,6 +56,7 @@ wwm_message_queue_new(wwm_connection_t connection)
     wwm_message_queue_t queue = (wwm_message_queue_t)calloc(1, sizeof(struct wwm_message_queue_t_));
 
     queue->connection = connection;
+    queue->send_buffer = wwm_buffer_new(5000);
 
     (void)pthread_key_create(&(queue->per_thread_queue_key), _wwm_per_thread_queue_kill);
 
@@ -78,6 +80,8 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
     (void)pthread_key_delete(queue->per_thread_queue_key);
 
     wwm_connection_destroy(queue->connection);
+
+    wwm_buffer_destroy(queue->send_buffer);
 
     free(queue);
 }
@@ -104,19 +108,24 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
         for (ptq = queue->per_thread_queue_slist; NULL != ptq; ptq = ptq->next)
         {
             int messages_handled = 0;
-            wwm_buffer_t buffer = wwm_buffer_new(5000);
             wwm_frame_t frame = _wwm_per_thread_queue_dequeue(ptq);
             while (NULL != frame)
             {
-                buffer = wwm_frame_encode(frame, buffer);
+                queue->send_buffer = wwm_frame_encode(frame, queue->send_buffer);
                 messages_handled++;
+                // XXX: Make this high water mark configurable:
+                if (wwm_buffer_length(queue->send_buffer) > 50000)
+                {
+                    wwm_connection_send_buffer(queue->connection, queue->send_buffer);
+                    wwm_buffer_reset(queue->send_buffer);
+                }
                 frame = _wwm_per_thread_queue_dequeue(ptq);
             }
             if (messages_handled > 0)
             {
-                wwm_connection_send_buffer(queue->connection, buffer);
+                wwm_connection_send_buffer(queue->connection, queue->send_buffer);
+                wwm_buffer_reset(queue->send_buffer);
             }
-            wwm_buffer_destroy(buffer);
         }
     }
 }
