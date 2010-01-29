@@ -85,3 +85,22 @@ wwm_bert_push_string(wwm_buffer_t buf, const char * value)
     return buf;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_bert_push_timestamp(wwm_buffer_t buf, const struct timeval *tv)
+{
+    unsigned int megaseconds  = tv->tv_sec / 1000000;
+    unsigned int seconds      = tv->tv_sec % 1000000;
+    unsigned int microseconds = tv->tv_usec;
+
+    buf = wwm_bert_push_begin_tuple(buf, 5);
+    buf = wwm_bert_push_atom(buf, "atom");
+    buf = wwm_bert_push_atom(buf, "time");
+    buf = wwm_bert_push_int32(buf, megaseconds);
+    buf = wwm_bert_push_int32(buf, seconds);
+    buf = wwm_bert_push_int32(buf, microseconds);
+    return buf;
+}
+
