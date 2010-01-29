@@ -154,3 +154,14 @@ wwm_buffer_append_bytes(wwm_buffer_t buf, const unsigned char * bytes, size_t le
     return buf;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_buffer_append_buffer(wwm_buffer_t buf, const wwm_buffer_t value)
+{
+    buf = wwm_buffer_ensure(buf, value->length);
+    memcpy(buf->bytes + buf->length, value->bytes, value->length);
+    return buf;
+}
+

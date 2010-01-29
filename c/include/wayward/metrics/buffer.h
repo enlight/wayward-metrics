@@ -20,6 +20,7 @@ extern wwm_buffer_t             wwm_buffer_append_int8(wwm_buffer_t buf, int8_t 
 extern wwm_buffer_t             wwm_buffer_append_int16(wwm_buffer_t buf, int16_t value);
 extern wwm_buffer_t             wwm_buffer_append_int32(wwm_buffer_t buf, int32_t value);
 extern wwm_buffer_t             wwm_buffer_append_bytes(wwm_buffer_t buf, const unsigned char * bytes, size_t length);
+extern wwm_buffer_t             wwm_buffer_append_buffer(wwm_buffer_t buf, const wwm_buffer_t value);
 
 #endif
 

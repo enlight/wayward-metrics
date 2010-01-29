@@ -80,7 +80,7 @@ wwm_frame_encode(const wwm_frame_t frame, wwm_buffer_t buffer)
     buffer = wwm_buffer_append_int32(buffer, frame->correlation_id);
     if (NULL != frame->payload)
     {
-        buffer = wwm_buffer_append_bytes(buffer, wwm_buffer_bytes(frame->payload), wwm_buffer_length(frame->payload));
+        buffer = wwm_buffer_append_buffer(buffer, frame->payload);
     }
     return buffer;
 }
