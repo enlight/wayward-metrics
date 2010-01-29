@@ -86,8 +86,19 @@ wwm_reporter_start_session(wwm_reporter_t reporter, const char *session_id)
 void
 wwm_reporter_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
 {
+    struct timeval now;
+    (void)gettimeofday(&now, NULL);
+
     wwm_frame_t frame = wwm_frame_new();
-    wwm_frame_setup(frame, METRICS_METHOD_RECORD_DATA, 0, data);
+    wwm_buffer_t payload = wwm_buffer_new(512 + wwm_buffer_length(data));
+    payload = wwm_bert_push_begin(payload);
+    payload = wwm_bert_push_begin_tuple(payload, 3);
+    payload = wwm_bert_push_timestamp(payload, &now);
+    payload = wwm_bert_push_int32(payload, 0); // Plug in the current thread ID
+    payload = wwm_bert_push_begin_tuple(payload, 0); // Plug in the stack trace
+    payload = wwm_bert_push_begin_tuple(payload, 0); // Plug in the context stack
+    payload = wwm_buffer_append_buffer(payload, data);
+    wwm_frame_setup(frame, METRICS_METHOD_RECORD_DATA, 0, payload);
     wwm_message_queue_enqueue(reporter->message_queue, frame);
 }
 
