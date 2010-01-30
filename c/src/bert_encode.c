@@ -66,7 +66,7 @@ wwm_bert_push_atom(wwm_buffer_t buf, const char * value)
     buf = wwm_buffer_ensure(buf, 1 + 2 + string_length);
     buf = wwm_buffer_append_int8(buf, BERT_ATOM_EXT);
     buf = wwm_buffer_append_int16(buf, string_length);
-    buf = wwm_buffer_append_bytes(buf, value, string_length);
+    buf = wwm_buffer_append_bytes(buf, (unsigned char *)value, string_length);
     return buf;
 }
 
@@ -81,7 +81,7 @@ wwm_bert_push_string(wwm_buffer_t buf, const char * value)
     buf = wwm_buffer_ensure(buf, 1 + 2 + string_length);
     buf = wwm_buffer_append_int8(buf, BERT_BINARY_EXT);
     buf = wwm_buffer_append_int32(buf, string_length);
-    buf = wwm_buffer_append_bytes(buf, value, string_length);
+    buf = wwm_buffer_append_bytes(buf, (unsigned char *)value, string_length);
     return buf;
 }
 
