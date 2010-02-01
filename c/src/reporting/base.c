@@ -4,7 +4,6 @@
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/connection.h"
 #include "wayward/metrics/file.h"
-#include "wayward/metrics/frame.h"
 #include "wayward/metrics/message_queue.h"
 #include "wayward/metrics/reporting/constants.h"
 #include "wayward/metrics/thread.h"
@@ -95,18 +94,27 @@ wwm_reporter_log_to_file(wwm_reporter_t reporter, const char *filename)
 //------------------------------------------------------------------------------
 /**
 */
+wwm_buffer_t
+wwm_reporter_start_command(wwm_reporter_t reporter, wwm_buffer_t data, int32_t message_type, int32_t correlation_id)
+{
+    data = wwm_buffer_append_int32(data, message_type);
+    data = wwm_buffer_append_int32(data, correlation_id);
+    return data;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 wwm_reporter_start_session(wwm_reporter_t reporter, const char *session_id)
 {
     wwm_buffer_t buffer = wwm_buffer_new(255);
+    buffer = wwm_reporter_start_command(reporter, buffer, METRICS_METHOD_START_SESSION, 1);
     buffer = wwm_bert_push_begin(buffer);
     buffer = wwm_bert_push_begin_tuple(buffer, 1);
     buffer = wwm_bert_push_string(buffer, session_id);
 
-    wwm_frame_t frame = wwm_frame_new();
-    wwm_frame_setup(frame, METRICS_METHOD_START_SESSION, 1, buffer);
-
-    wwm_message_queue_enqueue(reporter->message_queue, frame);
+    wwm_message_queue_enqueue(reporter->message_queue, buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -122,6 +130,7 @@ wwm_reporter_populate_base_record_data(wwm_reporter_t reporter, wwm_buffer_t dat
     (void)gettimeofday(&now, NULL);
 
     data = wwm_buffer_ensure(data, 512);
+    data = wwm_reporter_start_command(reporter, data, METRICS_METHOD_START_SESSION, 1);
     data = wwm_bert_push_begin(data);
     data = wwm_bert_push_begin_tuple(data, 3);
     data = wwm_bert_push_timestamp(data, &now);
@@ -137,9 +146,7 @@ wwm_reporter_populate_base_record_data(wwm_reporter_t reporter, wwm_buffer_t dat
 void
 wwm_reporter_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
 {
-    wwm_frame_t frame = wwm_frame_new();
-    wwm_frame_setup(frame, METRICS_METHOD_RECORD_DATA, 0, data);
-    wwm_message_queue_enqueue(reporter->message_queue, frame);
+    wwm_message_queue_enqueue(reporter->message_queue, data);
 }
 
 //------------------------------------------------------------------------------

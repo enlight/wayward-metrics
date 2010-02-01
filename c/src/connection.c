@@ -60,7 +60,7 @@ wwm_connection_destroy(wwm_connection_t conn)
 */
 int
 wwm_connection_handle_input(wwm_connection_t conn,
-                            wwm_frame_t decoded_frame)
+                            wwm_buffer_t out_buffer) 
 {
     return 0;
 }

@@ -9,6 +9,7 @@
 */
 struct wwm_buffer_t_
 {
+    wwm_buffer_t    next;
     size_t          size;           ///< Size of the allocated storage.
     size_t          length;         ///< Length of the data in the storage.
     unsigned char   bytes[0];
@@ -30,6 +31,7 @@ wwm_buffer_new(size_t initial_size)
     {
         return NULL;
     }
+    buf->next = NULL;
     buf->size = initial_size;
     buf->length = 0;
     return buf;
@@ -164,4 +166,23 @@ wwm_buffer_append_buffer(wwm_buffer_t buf, const wwm_buffer_t value)
     memcpy(buf->bytes + buf->length, value->bytes, value->length);
     return buf;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_buffer_set_next(wwm_buffer_t buf, wwm_buffer_t next)
+{
+    buf->next = next;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
+wwm_buffer_get_next(wwm_buffer_t buf)
+{
+    return buf->next;
+}
+
 

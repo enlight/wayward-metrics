@@ -22,5 +22,8 @@ extern wwm_buffer_t             wwm_buffer_append_int32(wwm_buffer_t buf, int32_
 extern wwm_buffer_t             wwm_buffer_append_bytes(wwm_buffer_t buf, const unsigned char * bytes, size_t length);
 extern wwm_buffer_t             wwm_buffer_append_buffer(wwm_buffer_t buf, const wwm_buffer_t value);
 
+extern void                     wwm_buffer_set_next(wwm_buffer_t buffer, wwm_buffer_t next);
+extern wwm_buffer_t             wwm_buffer_get_next(wwm_buffer_t buffer);
+
 #endif
 

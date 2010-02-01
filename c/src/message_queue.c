@@ -31,8 +31,8 @@ struct wwm_message_queue_t_
 struct _wwm_per_thread_queue_t_
 {
     wwm_message_queue_t             owner;
-    wwm_frame_t                     head;
-    wwm_frame_t                     tail;
+    wwm_buffer_t                    head;
+    wwm_buffer_t                    tail;
     bool                            thread_exited;
     _wwm_per_thread_queue_t         next;
 };
@@ -43,10 +43,10 @@ static void                     _wwm_message_queue_add_per_thread_queue(wwm_mess
 static void                     _wwm_message_queue_remove_per_thread_queue(wwm_message_queue_t queue, _wwm_per_thread_queue_t per_thread_queue);
 
 static _wwm_per_thread_queue_t  _wwm_per_thread_queue_new(wwm_message_queue_t owner);
-static void                     _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t);
+static void                     _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t per_thread_queue);
 static void                     _wwm_per_thread_queue_kill(void*);
-static void                     _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t, wwm_frame_t);
-static wwm_frame_t              _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue);
+static void                     _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_buffer_t buffer);
+static wwm_buffer_t             _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue);
 
 //------------------------------------------------------------------------------
 /**
@@ -136,10 +136,11 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
         for (ptq = queue->per_thread_queue_slist; NULL != ptq; ptq = ptq->next)
         {
             int messages_handled = 0;
-            wwm_frame_t frame = _wwm_per_thread_queue_dequeue(ptq);
-            while (NULL != frame)
+            wwm_buffer_t buffer = _wwm_per_thread_queue_dequeue(ptq);
+            while (NULL != buffer)
             {
-                queue->send_buffer = wwm_frame_encode(frame, queue->send_buffer);
+                queue->send_buffer = wwm_buffer_append_int32(queue->send_buffer, wwm_buffer_length(buffer));
+                queue->send_buffer = wwm_buffer_append_buffer(queue->send_buffer, buffer);
                 messages_handled++;
                 // XXX: Make this high water mark configurable:
                 if (wwm_buffer_length(queue->send_buffer) > 50000)
@@ -154,7 +155,7 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
                     }
                     wwm_buffer_reset(queue->send_buffer);
                 }
-                frame = _wwm_per_thread_queue_dequeue(ptq);
+                buffer = _wwm_per_thread_queue_dequeue(ptq);
             }
             if (messages_handled > 0)
             {
@@ -176,7 +177,7 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
 /**
 */
 void
-wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_frame_t frame)
+wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_buffer_t buffer)
 {
     _wwm_per_thread_queue_t ptqueue = pthread_getspecific(queue->per_thread_queue_key);
     if (NULL == ptqueue)
@@ -184,7 +185,7 @@ wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_frame_t frame)
         ptqueue = _wwm_per_thread_queue_new(queue);
         pthread_setspecific(queue->per_thread_queue_key, ptqueue);
     }
-    _wwm_per_thread_queue_enqueue(ptqueue, frame);
+    _wwm_per_thread_queue_enqueue(ptqueue, buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -249,7 +250,7 @@ _wwm_per_thread_queue_new(wwm_message_queue_t owner)
 {
     _wwm_per_thread_queue_t ptqueue = (_wwm_per_thread_queue_t)malloc(sizeof(struct _wwm_per_thread_queue_t_));
     ptqueue->owner = owner;
-    ptqueue->head = ptqueue->tail = wwm_frame_new();
+    ptqueue->head = ptqueue->tail = wwm_buffer_new(0);
     ptqueue->thread_exited = FALSE;
     ptqueue->next = NULL;
 
@@ -282,28 +283,28 @@ _wwm_per_thread_queue_kill(void* per_thread_queue)
 /**
 */
 static void
-_wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_frame_t frame)
+_wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_buffer_t buffer)
 {
     __sync_synchronize();
-    wwm_frame_set_next(per_thread_queue->tail, frame);
-    per_thread_queue->tail = frame;
+    wwm_buffer_set_next(per_thread_queue->tail, buffer);
+    per_thread_queue->tail = buffer;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-static wwm_frame_t
+static wwm_buffer_t
 _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue)
 {
-    wwm_frame_t old_head = per_thread_queue->head;
-    wwm_frame_t next_head = wwm_frame_get_next(old_head);
+    wwm_buffer_t old_head = per_thread_queue->head;
+    wwm_buffer_t next_head = wwm_buffer_get_next(old_head);
     if (NULL == next_head)
     {
         // queue was empty.
         return NULL;
     }
     per_thread_queue->head = next_head;
-    wwm_frame_destroy(old_head);
+    wwm_buffer_destroy(old_head);
     return next_head;
 }
 

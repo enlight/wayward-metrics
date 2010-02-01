@@ -2,7 +2,6 @@
 #define _WAYWARD_METRICS_CONNECTION_H_
 
 #include "wayward/metrics/buffer.h"
-#include "wayward/metrics/frame.h"
 
 typedef struct wwm_connection_t_ *wwm_connection_t;
 
@@ -13,7 +12,7 @@ extern int                  wwm_connection_get_sockfd(wwm_connection_t conn);
 extern void                 wwm_connection_set_sockfd(wwm_connection_t conn, int sockfd);
 
 extern int                  wwm_connection_handle_input(wwm_connection_t conn,
-                                                        wwm_frame_t decoded_frame);
+                                                        wwm_buffer_t output_buffer);
 extern int                  wwm_connection_send_buffer(wwm_connection_t conn,
                                                        const wwm_buffer_t buffer);
 
