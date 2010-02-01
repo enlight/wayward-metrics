@@ -35,20 +35,6 @@ wwm_reporter_context_enter(wwm_reporter_t reporter, uint64_t context_id)
 /**
 */
 void
-wwm_reporter_context_enter_by_name(wwm_reporter_t reporter, const char *name)
-{
-    wwm_buffer_t data = wwm_buffer_new(512);
-    data = wwm_reporter_populate_base_record_data(reporter, data);
-    data = wwm_bert_push_begin_tuple(data, 2);
-    data = wwm_bert_push_int32(data, METRICS_EVENT_CONTEXT_ENTER_BY_NAME);
-    data = wwm_bert_push_string(data, name);
-    wwm_reporter_record_data(reporter, data);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 wwm_reporter_context_exit(wwm_reporter_t reporter)
 {
     wwm_buffer_t data = wwm_buffer_new(512);

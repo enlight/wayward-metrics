@@ -22,8 +22,7 @@
 
 #define METRICS_EVENT_CONTEXT_CREATE                200
 #define METRICS_EVENT_CONTEXT_ENTER                 201
-#define METRICS_EVENT_CONTEXT_ENTER_BY_NAME         202
-#define METRICS_EVENT_CONTEXT_EXIT                  203
+#define METRICS_EVENT_CONTEXT_EXIT                  202
 
 #endif
 

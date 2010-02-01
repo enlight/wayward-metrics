@@ -5,7 +5,6 @@
 
 extern void wwm_reporter_context_create(wwm_reporter_t reporter, uint64_t context_id, const char *name);
 extern void wwm_reporter_context_enter(wwm_reporter_t reporter, uint64_t context_id);
-extern void wwm_reporter_context_enter_by_name(wwm_reporter_t reporter, const char *name);
 extern void wwm_reporter_context_exit(wwm_reporter_t reporter);
 
 #endif
