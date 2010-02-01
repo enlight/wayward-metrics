@@ -13,6 +13,7 @@ add_library(waywardmetrics
             src/file.c
             src/frame.c
             src/message_queue.c
+            src/posix/thread.c
             src/reporting/base.c
             src/socket.c
             src/version.c

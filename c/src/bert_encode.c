@@ -59,6 +59,18 @@ wwm_bert_push_int32(wwm_buffer_t buf, int32_t value)
 /**
 */
 wwm_buffer_t
+wwm_bert_push_uint64(wwm_buffer_t buf, uint64_t value)
+{
+    buf = wwm_buffer_ensure(buf, 5);
+    buf = wwm_buffer_append_int8(buf, BERT_INTEGER_EXT);
+    buf = wwm_buffer_append_int32(buf, value);
+    return buf;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_buffer_t
 wwm_bert_push_atom(wwm_buffer_t buf, const char * value)
 {
     size_t string_length = strlen(value);

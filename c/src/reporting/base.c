@@ -7,16 +7,43 @@
 #include "wayward/metrics/frame.h"
 #include "wayward/metrics/message_queue.h"
 #include "wayward/metrics/reporting/constants.h"
+#include "wayward/metrics/thread.h"
 
+#include <execinfo.h>
+#include <pthread.h>
 #include <stdlib.h>
+
+typedef struct _wwm_reporter_per_thread_data_t_ *_wwm_reporter_per_thread_data_t;
+
+#define STACKTRACE_BUFFER_LENGTH 100
 
 //------------------------------------------------------------------------------
 /**
 */
 struct wwm_reporter_t_
 {
-    wwm_message_queue_t     message_queue;
+    wwm_message_queue_t             message_queue;
+    pthread_key_t                   per_thread_data_key;
+    _wwm_reporter_per_thread_data_t per_thread_data_slist;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+struct _wwm_reporter_per_thread_data_t_
+{
+    wwm_reporter_t                          owner;
+    void                                 ** stacktrace_buffer;
+    _wwm_reporter_per_thread_data_t         next;
+};
+
+static _wwm_reporter_per_thread_data_t _wwm_reporter_get_per_thread_data(wwm_reporter_t reporter);
+
+static _wwm_reporter_per_thread_data_t  _wwm_reporter_per_thread_data_new(wwm_reporter_t owner);
+static void _wwm_reporter_per_thread_data_destroy(_wwm_reporter_per_thread_data_t per_thread_data);
+static void _wwm_reporter_per_thread_data_kill(void* per_thread_data);
+static void _wwm_reporter_add_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thread_data_t per_thread_data);
+static void _wwm_reporter_remove_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thread_data_t per_thread_data);
 
 //------------------------------------------------------------------------------
 /**
@@ -25,6 +52,8 @@ wwm_reporter_t
 wwm_reporter_new(void)
 {
     wwm_reporter_t reporter = (wwm_reporter_t)calloc(1, sizeof(struct wwm_reporter_t_));
+
+    (void)pthread_key_create(&(reporter->per_thread_data_key), _wwm_reporter_per_thread_data_kill);
 
     reporter->message_queue = wwm_message_queue_new();
     return reporter;
@@ -83,22 +112,128 @@ wwm_reporter_start_session(wwm_reporter_t reporter, const char *session_id)
 //------------------------------------------------------------------------------
 /**
 */
-void
-wwm_reporter_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
+wwm_buffer_t
+wwm_reporter_populate_base_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
 {
+    _wwm_reporter_per_thread_data_t ptdata = _wwm_reporter_get_per_thread_data(reporter);
+    int stack_frame_count = backtrace(ptdata->stacktrace_buffer, STACKTRACE_BUFFER_LENGTH);
+
     struct timeval now;
     (void)gettimeofday(&now, NULL);
 
+    data = wwm_buffer_ensure(data, 512);
+    data = wwm_bert_push_begin(data);
+    data = wwm_bert_push_begin_tuple(data, 3);
+    data = wwm_bert_push_timestamp(data, &now);
+    data = wwm_bert_push_uint64(data, wwm_thread_get_current_id());
+    data = wwm_bert_push_begin_tuple(data, 0); // Plug in the stack trace
+    data = wwm_bert_push_begin_tuple(data, 0); // Plug in the context stack
+    return data;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_reporter_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
+{
     wwm_frame_t frame = wwm_frame_new();
-    wwm_buffer_t payload = wwm_buffer_new(512 + wwm_buffer_length(data));
-    payload = wwm_bert_push_begin(payload);
-    payload = wwm_bert_push_begin_tuple(payload, 3);
-    payload = wwm_bert_push_timestamp(payload, &now);
-    payload = wwm_bert_push_int32(payload, 0); // Plug in the current thread ID
-    payload = wwm_bert_push_begin_tuple(payload, 0); // Plug in the stack trace
-    payload = wwm_bert_push_begin_tuple(payload, 0); // Plug in the context stack
-    payload = wwm_buffer_append_buffer(payload, data);
-    wwm_frame_setup(frame, METRICS_METHOD_RECORD_DATA, 0, payload);
+    wwm_frame_setup(frame, METRICS_METHOD_RECORD_DATA, 0, data);
     wwm_message_queue_enqueue(reporter->message_queue, frame);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static _wwm_reporter_per_thread_data_t
+_wwm_reporter_get_per_thread_data(wwm_reporter_t reporter)
+{
+    _wwm_reporter_per_thread_data_t ptdata = pthread_getspecific(reporter->per_thread_data_key);
+    if (NULL == ptdata)
+    {
+        ptdata = _wwm_reporter_per_thread_data_new(reporter);
+        pthread_setspecific(reporter->per_thread_data_key, ptdata);
+    }
+    return ptdata;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static _wwm_reporter_per_thread_data_t
+_wwm_reporter_per_thread_data_new(wwm_reporter_t owner)
+{
+    _wwm_reporter_per_thread_data_t ptdata = (_wwm_reporter_per_thread_data_t)malloc(sizeof(struct _wwm_reporter_per_thread_data_t_));
+    ptdata->owner = owner;
+    ptdata->next = NULL;
+    ptdata->stacktrace_buffer = (void**)malloc(STACKTRACE_BUFFER_LENGTH * sizeof(void*));
+
+    _wwm_reporter_add_per_thread_data(owner, ptdata);
+
+    return ptdata;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+_wwm_reporter_per_thread_data_destroy(_wwm_reporter_per_thread_data_t per_thread_data)
+{
+    _wwm_reporter_remove_per_thread_data(per_thread_data->owner, per_thread_data);
+    free(per_thread_data->stacktrace_buffer);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+_wwm_reporter_per_thread_data_kill(void* per_thread_data)
+{
+    _wwm_reporter_per_thread_data_destroy((_wwm_reporter_per_thread_data_t)per_thread_data);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+_wwm_reporter_add_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thread_data_t per_thread_data)
+{
+    if (NULL == reporter->per_thread_data_slist)
+    {
+        reporter->per_thread_data_slist = per_thread_data;
+    }
+    else
+    {
+        _wwm_reporter_per_thread_data_t tail = reporter->per_thread_data_slist;
+        while (NULL != tail->next)
+        {
+            tail = tail->next;
+        }
+        tail->next = per_thread_data;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+_wwm_reporter_remove_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thread_data_t per_thread_data)
+{
+    if (per_thread_data == reporter->per_thread_data_slist)
+    {
+        reporter->per_thread_data_slist = per_thread_data->next;
+    }
+    else
+    {
+        _wwm_reporter_per_thread_data_t ptd;
+        for (ptd = reporter->per_thread_data_slist; NULL != ptd->next; ptd = ptd->next)
+        {
+            if (per_thread_data == ptd->next)
+            {
+                ptd->next = per_thread_data->next;
+                break;
+            }
+        }
+    }
 }
 
