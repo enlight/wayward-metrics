@@ -25,7 +25,7 @@ wwm_reporter_memory_heap_destroy(wwm_reporter_t reporter, int heap_id)
 {
     wwm_buffer_t data = wwm_buffer_new(512);
     data = wwm_reporter_populate_base_record_data(reporter, data);
-    data = wwm_bert_push_begin_tuple(data, 3);
+    data = wwm_bert_push_begin_tuple(data, 2);
     data = wwm_bert_push_int32(data, METRICS_EVENT_MEMORY_HEAP_DESTROY);
     data = wwm_bert_push_int32(data, heap_id);
     wwm_reporter_record_data(reporter, data);
@@ -63,7 +63,7 @@ wwm_reporter_memory_gc_start(wwm_reporter_t reporter, int heap_id)
 {
     wwm_buffer_t data = wwm_buffer_new(512);
     data = wwm_reporter_populate_base_record_data(reporter, data);
-    data = wwm_bert_push_begin_tuple(data, 3);
+    data = wwm_bert_push_begin_tuple(data, 2);
     data = wwm_bert_push_int32(data, METRICS_EVENT_MEMORY_GC_START);
     data = wwm_bert_push_int32(data, heap_id);
     wwm_reporter_record_data(reporter, data);
@@ -77,7 +77,7 @@ wwm_reporter_memory_gc_end(wwm_reporter_t reporter, int heap_id)
 {
     wwm_buffer_t data = wwm_buffer_new(512);
     data = wwm_reporter_populate_base_record_data(reporter, data);
-    data = wwm_bert_push_begin_tuple(data, 3);
+    data = wwm_bert_push_begin_tuple(data, 2);
     data = wwm_bert_push_int32(data, METRICS_EVENT_MEMORY_GC_END);
     data = wwm_bert_push_int32(data, heap_id);
     wwm_reporter_record_data(reporter, data);
