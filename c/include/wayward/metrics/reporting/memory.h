@@ -1,7 +1,7 @@
 #ifndef _WAYWARD_METRICS_REPORTING_MEMORY_H_
 #define _WAYWARD_METRICS_REPORTING_MEMORY_H_
 
-#include "wayward/metrics/reporting/base.h"
+#include "wayward/metrics/reporting/reporter.h"
 
 extern void wwm_reporter_memory_heap_new(wwm_reporter_t reporter, int heap_id, const char* heap_name);
 extern void wwm_reporter_memory_heap_destroy(wwm_reporter_t reporter, int heap_id);

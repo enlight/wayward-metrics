@@ -1,4 +1,4 @@
-#include "wayward/metrics/reporting/base.h"
+#include "wayward/metrics/reporting/reporter.h"
 
 #include "wayward/metrics/bert_encode.h"
 #include "wayward/metrics/buffer.h"

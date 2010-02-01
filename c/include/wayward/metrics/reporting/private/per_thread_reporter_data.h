@@ -1,7 +1,7 @@
 #ifndef _WAYWARD_METRICS_REPORTING_PRIVATE_PER_THREAD_REPORTER_DATA_H_
 #define _WAYWARD_METRICS_REPORTING_PRIVATE_PER_THREAD_REPORTER_DATA_H_
 
-#include "wayward/metrics/reporting/base.h"
+#include "wayward/metrics/reporting/reporter.h"
 
 #define STACKTRACE_BUFFER_LENGTH 100
 

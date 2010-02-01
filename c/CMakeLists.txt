@@ -13,10 +13,10 @@ add_library(waywardmetrics
             src/message_queue.c
             src/posix/file.c
             src/posix/thread.c
-            src/reporting/base.c
             src/reporting/context.c
             src/reporting/memory.c
             src/reporting/per_thread_reporter_data.c
+            src/reporting/reporter.c
             src/socket.c
             src/version.c
            )
