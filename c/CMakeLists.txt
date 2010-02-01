@@ -10,9 +10,9 @@ add_library(waywardmetrics
             src/bert_encode.c
             src/buffer.c
             src/connection.c
-            src/file.c
             src/frame.c
             src/message_queue.c
+            src/posix/file.c
             src/posix/thread.c
             src/reporting/base.c
             src/socket.c
