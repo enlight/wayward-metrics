@@ -14,6 +14,7 @@ add_library(waywardmetrics
             src/posix/file.c
             src/posix/thread.c
             src/reporting/base.c
+            src/reporting/memory.c
             src/socket.c
             src/version.c
            )
