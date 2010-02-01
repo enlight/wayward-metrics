@@ -4,45 +4,13 @@
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/connection.h"
 #include "wayward/metrics/file.h"
-#include "wayward/metrics/message_queue.h"
 #include "wayward/metrics/reporting/constants.h"
+#include "wayward/metrics/reporting/private/per_thread_reporter_data.h"
+#include "wayward/metrics/reporting/private/reporter.h"
 #include "wayward/metrics/thread.h"
 
 #include <execinfo.h>
-#include <pthread.h>
 #include <stdlib.h>
-
-typedef struct _wwm_reporter_per_thread_data_t_ *_wwm_reporter_per_thread_data_t;
-
-#define STACKTRACE_BUFFER_LENGTH 100
-
-//------------------------------------------------------------------------------
-/**
-*/
-struct wwm_reporter_t_
-{
-    wwm_message_queue_t             message_queue;
-    pthread_key_t                   per_thread_data_key;
-    _wwm_reporter_per_thread_data_t per_thread_data_slist;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-struct _wwm_reporter_per_thread_data_t_
-{
-    wwm_reporter_t                          owner;
-    void                                 ** stacktrace_buffer;
-    _wwm_reporter_per_thread_data_t         next;
-};
-
-static _wwm_reporter_per_thread_data_t _wwm_reporter_get_per_thread_data(wwm_reporter_t reporter);
-
-static _wwm_reporter_per_thread_data_t  _wwm_reporter_per_thread_data_new(wwm_reporter_t owner);
-static void _wwm_reporter_per_thread_data_destroy(_wwm_reporter_per_thread_data_t per_thread_data);
-static void _wwm_reporter_per_thread_data_kill(void* per_thread_data);
-static void _wwm_reporter_add_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thread_data_t per_thread_data);
-static void _wwm_reporter_remove_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thread_data_t per_thread_data);
 
 //------------------------------------------------------------------------------
 /**
@@ -152,7 +120,7 @@ wwm_reporter_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
 //------------------------------------------------------------------------------
 /**
 */
-static _wwm_reporter_per_thread_data_t
+_wwm_reporter_per_thread_data_t
 _wwm_reporter_get_per_thread_data(wwm_reporter_t reporter)
 {
     _wwm_reporter_per_thread_data_t ptdata = pthread_getspecific(reporter->per_thread_data_key);
@@ -167,42 +135,7 @@ _wwm_reporter_get_per_thread_data(wwm_reporter_t reporter)
 //------------------------------------------------------------------------------
 /**
 */
-static _wwm_reporter_per_thread_data_t
-_wwm_reporter_per_thread_data_new(wwm_reporter_t owner)
-{
-    _wwm_reporter_per_thread_data_t ptdata = (_wwm_reporter_per_thread_data_t)malloc(sizeof(struct _wwm_reporter_per_thread_data_t_));
-    ptdata->owner = owner;
-    ptdata->next = NULL;
-    ptdata->stacktrace_buffer = (void**)malloc(STACKTRACE_BUFFER_LENGTH * sizeof(void*));
-
-    _wwm_reporter_add_per_thread_data(owner, ptdata);
-
-    return ptdata;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static void
-_wwm_reporter_per_thread_data_destroy(_wwm_reporter_per_thread_data_t per_thread_data)
-{
-    _wwm_reporter_remove_per_thread_data(per_thread_data->owner, per_thread_data);
-    free(per_thread_data->stacktrace_buffer);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static void
-_wwm_reporter_per_thread_data_kill(void* per_thread_data)
-{
-    _wwm_reporter_per_thread_data_destroy((_wwm_reporter_per_thread_data_t)per_thread_data);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static void
+void
 _wwm_reporter_add_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thread_data_t per_thread_data)
 {
     if (NULL == reporter->per_thread_data_slist)
@@ -223,7 +156,7 @@ _wwm_reporter_add_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thr
 //------------------------------------------------------------------------------
 /**
 */
-static void
+void
 _wwm_reporter_remove_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_thread_data_t per_thread_data)
 {
     if (per_thread_data == reporter->per_thread_data_slist)
