@@ -15,7 +15,6 @@ add_library(waywardmetrics
             src/posix/thread.c
             src/reporting/context.c
             src/reporting/memory.c
-            src/reporting/per_thread_reporter_data.c
             src/reporting/reporter.c
             src/socket.c
             src/version.c

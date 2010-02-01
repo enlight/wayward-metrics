@@ -5,7 +5,6 @@
 #include "wayward/metrics/connection.h"
 #include "wayward/metrics/file.h"
 #include "wayward/metrics/reporting/constants.h"
-#include "wayward/metrics/reporting/private/per_thread_reporter_data.h"
 #include "wayward/metrics/reporting/private/reporter.h"
 #include "wayward/metrics/thread.h"
 
@@ -175,5 +174,63 @@ _wwm_reporter_remove_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_
             }
         }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+_wwm_reporter_per_thread_data_t
+_wwm_reporter_per_thread_data_new(wwm_reporter_t owner)
+{
+    _wwm_reporter_per_thread_data_t ptdata = (_wwm_reporter_per_thread_data_t)malloc(sizeof(struct _wwm_reporter_per_thread_data_t_));
+    ptdata->owner = owner;
+    ptdata->next = NULL;
+    ptdata->stacktrace_buffer = (void**)malloc(STACKTRACE_BUFFER_LENGTH * sizeof(void*));
+
+    _wwm_reporter_add_per_thread_data(owner, ptdata);
+
+    return ptdata;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_reporter_per_thread_data_destroy(_wwm_reporter_per_thread_data_t per_thread_data)
+{
+    _wwm_reporter_remove_per_thread_data(per_thread_data->owner, per_thread_data);
+    free(per_thread_data->stacktrace_buffer);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_reporter_per_thread_data_kill(void* per_thread_data)
+{
+    _wwm_reporter_per_thread_data_destroy((_wwm_reporter_per_thread_data_t)per_thread_data);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_reporter_per_thread_data_push_context(_wwm_reporter_per_thread_data_t per_thread_data, uint64_t context_id)
+{
+    // XXX: Check that current_context_depth < MAX_CONTEXT_DEPTH - 1!
+    per_thread_data->context_stack[per_thread_data->current_context_depth].context_id = context_id;
+    per_thread_data->current_context_depth += 1;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+_wwm_reporter_per_thread_data_pop_context(_wwm_reporter_per_thread_data_t per_thread_data)
+{
+    // XXX: Check that the current_context_depth > 0!
+    per_thread_data->context_stack[per_thread_data->current_context_depth].context_id = 0;
+    per_thread_data->current_context_depth -= 1;
 }
 
