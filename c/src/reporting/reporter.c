@@ -1,7 +1,7 @@
 #include "wayward/metrics/reporting/reporter.h"
 
-#include "wayward/metrics/bert_encode.h"
 #include "wayward/metrics/buffer.h"
+#include "wayward/metrics/codec.h"
 #include "wayward/metrics/connection.h"
 #include "wayward/metrics/file.h"
 #include "wayward/metrics/reporting/constants.h"
@@ -78,9 +78,9 @@ wwm_reporter_start_session(wwm_reporter_t reporter, const char *session_id)
 {
     wwm_buffer_t buffer = wwm_buffer_new(255);
     buffer = wwm_reporter_start_command(reporter, buffer, METRICS_METHOD_START_SESSION, 1);
-    buffer = wwm_bert_push_begin(buffer);
-    buffer = wwm_bert_push_begin_tuple(buffer, 1);
-    buffer = wwm_bert_push_string(buffer, session_id);
+    buffer = wwm_codec_push_begin(buffer);
+    buffer = wwm_codec_push_begin_tuple(buffer, 1);
+    buffer = wwm_codec_push_string(buffer, session_id);
 
     wwm_message_queue_enqueue(reporter->message_queue, buffer);
 }
@@ -99,12 +99,12 @@ wwm_reporter_populate_base_record_data(wwm_reporter_t reporter, wwm_buffer_t dat
 
     data = wwm_buffer_ensure(data, 512);
     data = wwm_reporter_start_command(reporter, data, METRICS_METHOD_START_SESSION, 1);
-    data = wwm_bert_push_begin(data);
-    data = wwm_bert_push_begin_tuple(data, 3);
-    data = wwm_bert_push_timestamp(data, &now);
-    data = wwm_bert_push_uint64(data, wwm_thread_get_current_id());
-    data = wwm_bert_push_begin_tuple(data, 0); // Plug in the stack trace
-    data = wwm_bert_push_begin_tuple(data, 0); // Plug in the context stack
+    data = wwm_codec_push_begin(data);
+    data = wwm_codec_push_begin_tuple(data, 3);
+    data = wwm_codec_push_timestamp(data, &now);
+    data = wwm_codec_push_uint64(data, wwm_thread_get_current_id());
+    data = wwm_codec_push_begin_tuple(data, 0); // Plug in the stack trace
+    data = wwm_codec_push_begin_tuple(data, 0); // Plug in the context stack
     return data;
 }
 
