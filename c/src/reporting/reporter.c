@@ -1,5 +1,6 @@
 #include "wayward/metrics/reporting/reporter.h"
 
+#include "wayward/metrics/allocator.h"
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/codec.h"
 #include "wayward/metrics/connection.h"
@@ -9,7 +10,6 @@
 #include "wayward/metrics/thread.h"
 
 #include <execinfo.h>
-#include <stdlib.h>
 
 //------------------------------------------------------------------------------
 /**
@@ -17,7 +17,7 @@
 wwm_reporter_t
 wwm_reporter_new(void)
 {
-    wwm_reporter_t reporter = (wwm_reporter_t)calloc(1, sizeof(struct wwm_reporter_t_));
+    wwm_reporter_t reporter = (wwm_reporter_t)g_wwm_allocator.calloc(1, sizeof(struct wwm_reporter_t_));
 
     (void)pthread_key_create(&(reporter->per_thread_data_key), _wwm_reporter_per_thread_data_kill);
 
@@ -32,7 +32,7 @@ void
 wwm_reporter_destroy(wwm_reporter_t reporter)
 {
     wwm_message_queue_destroy(reporter->message_queue);
-    free(reporter);
+    g_wwm_allocator.free(reporter);
 }
 
 //------------------------------------------------------------------------------
@@ -182,10 +182,10 @@ _wwm_reporter_remove_per_thread_data(wwm_reporter_t reporter, _wwm_reporter_per_
 _wwm_reporter_per_thread_data_t
 _wwm_reporter_per_thread_data_new(wwm_reporter_t owner)
 {
-    _wwm_reporter_per_thread_data_t ptdata = (_wwm_reporter_per_thread_data_t)malloc(sizeof(struct _wwm_reporter_per_thread_data_t_));
+    _wwm_reporter_per_thread_data_t ptdata = (_wwm_reporter_per_thread_data_t)g_wwm_allocator.malloc(sizeof(struct _wwm_reporter_per_thread_data_t_));
     ptdata->owner = owner;
     ptdata->next = NULL;
-    ptdata->stacktrace_buffer = (void**)malloc(STACKTRACE_BUFFER_LENGTH * sizeof(void*));
+    ptdata->stacktrace_buffer = (void**)g_wwm_allocator.malloc(STACKTRACE_BUFFER_LENGTH * sizeof(void*));
 
     _wwm_reporter_add_per_thread_data(owner, ptdata);
 
@@ -199,7 +199,7 @@ void
 _wwm_reporter_per_thread_data_destroy(_wwm_reporter_per_thread_data_t per_thread_data)
 {
     _wwm_reporter_remove_per_thread_data(per_thread_data->owner, per_thread_data);
-    free(per_thread_data->stacktrace_buffer);
+    g_wwm_allocator.free(per_thread_data->stacktrace_buffer);
 }
 
 //------------------------------------------------------------------------------

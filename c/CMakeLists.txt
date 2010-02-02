@@ -7,6 +7,8 @@ ENDIF(APPLE)
 
 include_directories(${WAYWARD_METRICS_SOURCE_DIR}/include)
 add_library(waywardmetrics
+            src/allocator.c
+            src/allocator_system.c
             src/buffer.c
             src/codec.c
             src/connection.c

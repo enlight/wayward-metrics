@@ -1,7 +1,8 @@
 #include "wayward/metrics/file.h"
 
+#include "wayward/metrics/allocator.h"
+
 #include <fcntl.h>
-#include <stdlib.h>
 #include <sys/stat.h>
 
 //------------------------------------------------------------------------------
@@ -18,7 +19,7 @@ struct wwm_file_t_
 wwm_file_t
 wwm_file_new(void)
 {
-    wwm_file_t file = calloc(1, sizeof(struct wwm_file_t_));
+    wwm_file_t file = g_wwm_allocator.calloc(1, sizeof(struct wwm_file_t_));
     file->fd = -1;
     return file;
 }
@@ -30,7 +31,7 @@ void
 wwm_file_destroy(wwm_file_t file)
 {
     wwm_file_close(file);
-    free(file);
+    g_wwm_allocator.free(file);
 }
 
 //------------------------------------------------------------------------------

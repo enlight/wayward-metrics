@@ -1,8 +1,8 @@
 #include "wayward/metrics/connection.h"
 
+#include "wayward/metrics/allocator.h"
 #include "wayward/metrics/buffer.h"
 
-#include <stdlib.h>
 #include <unistd.h>
 
 //------------------------------------------------------------------------------
@@ -19,7 +19,7 @@ struct wwm_connection_t_
 wwm_connection_t
 wwm_connection_new(void)
 {
-    wwm_connection_t conn = (wwm_connection_t)calloc(1, sizeof(struct wwm_connection_t_));
+    wwm_connection_t conn = (wwm_connection_t)g_wwm_allocator.calloc(1, sizeof(struct wwm_connection_t_));
     if (NULL == conn)
     {
         return NULL;
@@ -52,7 +52,7 @@ wwm_connection_set_sockfd(wwm_connection_t conn, int sockfd)
 void
 wwm_connection_destroy(wwm_connection_t conn)
 {
-    free(conn);
+    g_wwm_allocator.free(conn);
 }
 
 //------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 #include "wayward/metrics/buffer.h"
+#include "wayward/metrics/allocator.h"
 
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -26,7 +26,7 @@ struct wwm_buffer_t_
 wwm_buffer_t
 wwm_buffer_new(size_t initial_size)
 {
-    wwm_buffer_t buf = (wwm_buffer_t)malloc(sizeof(struct wwm_buffer_t_) + initial_size * sizeof(unsigned char));
+    wwm_buffer_t buf = (wwm_buffer_t)g_wwm_allocator.malloc(sizeof(struct wwm_buffer_t_) + initial_size * sizeof(unsigned char));
     if (NULL == buf)
     {
         return NULL;
@@ -43,7 +43,7 @@ wwm_buffer_new(size_t initial_size)
 void
 wwm_buffer_destroy(wwm_buffer_t buf)
 {
-    free(buf);
+    g_wwm_allocator.free(buf);
 }
 
 //------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ wwm_buffer_resize(wwm_buffer_t buf, size_t new_size)
     if (buf->size < new_size)
     {
         size_t alloc_size = ROUND_UP(sizeof(struct wwm_buffer_t_) + new_size, BUFFER_DATA_INCREMENT);
-        buf = realloc(buf, alloc_size);
+        buf = g_wwm_allocator.realloc(buf, alloc_size);
         buf->size = alloc_size - sizeof(struct wwm_buffer_t_);
         // This doesn't initialize any new memory in the bytes array.
     }

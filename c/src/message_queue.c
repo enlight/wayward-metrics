@@ -1,9 +1,9 @@
 #include "wayward/metrics/message_queue.h"
 
-#include <pthread.h>
-#include <stdlib.h>
-
+#include "wayward/metrics/allocator.h"
 #include "wayward/metrics/config.h"
+
+#include <pthread.h>
 
 // This uses a concurrent queue based on http://www.cs.rochester.edu/u/michael/PODC96.html
 // but without the locks since we have a single reader and a single writer
@@ -54,7 +54,7 @@ static wwm_buffer_t             _wwm_per_thread_queue_dequeue(_wwm_per_thread_qu
 wwm_message_queue_t
 wwm_message_queue_new(void)
 {
-    wwm_message_queue_t queue = (wwm_message_queue_t)calloc(1, sizeof(struct wwm_message_queue_t_));
+    wwm_message_queue_t queue = (wwm_message_queue_t)g_wwm_allocator.calloc(1, sizeof(struct wwm_message_queue_t_));
 
     queue->connection = NULL;
     queue->file = NULL;
@@ -93,7 +93,7 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
 
     wwm_buffer_destroy(queue->send_buffer);
 
-    free(queue);
+    g_wwm_allocator.free(queue);
 }
 
 //------------------------------------------------------------------------------
@@ -248,7 +248,7 @@ _wwm_message_queue_remove_per_thread_queue(wwm_message_queue_t queue, _wwm_per_t
 static _wwm_per_thread_queue_t
 _wwm_per_thread_queue_new(wwm_message_queue_t owner)
 {
-    _wwm_per_thread_queue_t ptqueue = (_wwm_per_thread_queue_t)malloc(sizeof(struct _wwm_per_thread_queue_t_));
+    _wwm_per_thread_queue_t ptqueue = (_wwm_per_thread_queue_t)g_wwm_allocator.malloc(sizeof(struct _wwm_per_thread_queue_t_));
     ptqueue->owner = owner;
     ptqueue->head = ptqueue->tail = wwm_buffer_new(0);
     ptqueue->thread_exited = FALSE;
