@@ -11,7 +11,7 @@ WaywardMonitoring.menu = [
         expanded: true,
         children: [{
             text: 'Objects',
-            xtype: 'memory_objects_panel',
+            xtype: 'wwm.memory_objects_panel',
             leaf: true
         },{
             text: 'Heaps',
@@ -44,11 +44,11 @@ Ext.onReady(function(){
                 var id = 'module-' + n.attributes.xtype;
                 var panel = tabPanel.getComponent(id);
                 if (undefined == panel) {
-                    panel = tabPanel.add(new Ext.Panel({
+                    panel = tabPanel.add({
                             title: n.attributes.text,
                             id: id,
                             xtype: n.attributes.xtype
-                        }));
+                        });
                 }
             } else {
                 var id = 'module-' + n.attributes.href;
