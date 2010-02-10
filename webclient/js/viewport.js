@@ -15,7 +15,7 @@ WaywardMonitoring.menu = [
             leaf: true
         },{
             text: 'Heaps',
-            xtype: 'memory_heaps_panel',
+            xtype: 'wwm.memory_heaps_panel',
             leaf: true
         }]
     }, {
