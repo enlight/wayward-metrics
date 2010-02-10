@@ -1,5 +1,5 @@
 {
-    heapCount: 5,
+    heapCount: 2,
     heaps: [{
                 id: 1,
                 heap_name: 'Main',
