@@ -20,11 +20,11 @@ WaywardMonitoring.menu = [
         }]
     }, {
         text: 'Log Messages',
-        xtype: 'log_messages_panel',
+        xtype: 'wwm.log_messages_panel',
         leaf: true
     }, {
         text: 'Threading / Lock Activity',
-        xtype: 'threading_lock_activity_panel',
+        xtype: 'wwm.threading_lock_activity_panel',
         leaf: true
     }]
 
