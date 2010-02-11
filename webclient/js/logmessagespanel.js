@@ -1,8 +1,8 @@
 Ext.ns("WaywardMonitoring");
 
-WaywardMonitoring.LogMessagesPanel = Ext.extend(Ext.grid.GridPanel, {
+WaywardMonitoring.LogMessagesGridPanel = Ext.extend(Ext.grid.GridPanel, {
     initComponent:function() {
-        config = {
+        var config = {
             store: new Ext.data.JsonStore({
                 baseParams: {lightWeight:true,ext: 'js'},
                 sortInfo: {field:'timestamp', direction:'ASC'},
@@ -62,12 +62,63 @@ WaywardMonitoring.LogMessagesPanel = Ext.extend(Ext.grid.GridPanel, {
                 pageSize: 500,
                 displayInfo: true
             });
-        WaywardMonitoring.LogMessagesPanel.superclass.initComponent.apply(this, arguments);
+        WaywardMonitoring.LogMessagesGridPanel.superclass.initComponent.apply(this, arguments);
         this.on({
                 afterlayout: {scope: this, single: true, fn:function() {
                     this.store.load({params:{start:0, limit:500}});
                 }}
             })
+    }
+});
+
+Ext.reg('wwm.log_messages_grid_panel', WaywardMonitoring.LogMessagesGridPanel);
+
+WaywardMonitoring.LogMessagesChannelTreeGrid = Ext.extend(Ext.ux.tree.TreeGrid, {
+    initComponent: function() {
+        var config = {
+                autoScroll: true,
+                rootVisible: false,
+                dataUrl: 'data/sample-log-message-channels.js',
+                columns: [{
+                        header: 'Channel',
+                        dataIndex: 'channel',
+                        width: 230
+                    },{
+                        header: 'Count',
+                        dataIndex: 'count',
+                        width: 100,
+                        align: 'right'
+                    }]
+            }
+        Ext.apply(this, Ext.apply(this.initialConfig, config));
+        WaywardMonitoring.LogMessagesChannelTreeGrid.superclass.initComponent.apply(this, arguments);
+    }
+});
+
+Ext.reg('wwm.log_messages_channel_tree_grid', WaywardMonitoring.LogMessagesChannelTreeGrid);
+
+WaywardMonitoring.LogMessagesPanel = Ext.extend(Ext.Container, {
+    initComponent:function() {
+        var config = {
+            layout: 'border',
+            items: [{
+                    region: 'west',
+                    xtype: 'wwm.log_messages_channel_tree_grid',
+                    collapsible: true,
+                    width: 150,
+                    minSize: 100,
+                    maxSize: 350,
+                    margins: '5 0 5 5',
+                    cmargins: '5 5 5 5',
+                    split: true
+                },{
+                    region: 'center',
+                    xtype: 'wwm.log_messages_grid_panel',
+                    margins: '5 5 5 0'
+                }]
+            }
+        Ext.apply(this, Ext.apply(this.initialConfig, config));
+        WaywardMonitoring.LogMessagesPanel.superclass.initComponent.apply(this, arguments);
     }
 });
 
