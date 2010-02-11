@@ -1,7 +1,10 @@
 Ext.ns("WaywardMonitoring");
 
+WaywardMonitoring.MessageBus.addEvents({
+    'log_messages_added': true
+})
 WaywardMonitoring.LogMessagesGridPanel = Ext.extend(Ext.grid.GridPanel, {
-    initComponent:function() {
+    initComponent: function() {
         var config = {
             store: new Ext.data.JsonStore({
                 baseParams: {lightWeight:true,ext: 'js'},
@@ -70,6 +73,10 @@ WaywardMonitoring.LogMessagesGridPanel = Ext.extend(Ext.grid.GridPanel, {
                     this.store.load({params:{start:0, limit:500}});
                 }}
             })
+        this.mon(WaywardMonitoring.MessageBus, 'log_messages_added', this.onLogMessagesAdded, this);
+    },
+    onLogMessagesAdded: function(data) {
+        this.store.loadData(data, true);
     }
 });
 
