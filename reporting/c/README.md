@@ -14,9 +14,9 @@ at a minimum, these platforms:
 Build
 -----
 
-   * Install CMake. This has been tested with 2.8, but may work with older versions.
-   * Generate the projects or Makefile with CMake.
-   * Build.
+   * Install CMake. This should work with 2.6 or 2.8.
+   * Generate the projects or Makefile with CMake (cmake .).
+   * Build (make).
 
 Usage
 -----
