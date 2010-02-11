@@ -83,7 +83,6 @@ Ext.onReady(function(){
             deferredRender: true,
             activeTab: 0,
             defaults: {
-                autoScroll: true,
                 closable: true
             },
             plugins: new Ext.ux.TabCloseMenu()
