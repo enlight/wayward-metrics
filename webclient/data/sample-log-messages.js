@@ -1,4 +1,4 @@
-{
+({
     messageCount: 2,
     messages: [{
                 id: 1,
@@ -18,4 +18,4 @@
                 source_location: 'main.c(29)'
             }
         ]
-}
+})

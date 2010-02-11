@@ -1,4 +1,4 @@
-{
+({
     objectCount: 5,
     objects: [{
                 id: 1,
@@ -37,4 +37,4 @@
                 count_live: 83
             }
         ]
-}
+})

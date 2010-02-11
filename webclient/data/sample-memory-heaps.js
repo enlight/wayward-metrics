@@ -1,4 +1,4 @@
-{
+({
     heapCount: 2,
     heaps: [{
                 id: 1,
@@ -16,4 +16,4 @@
                 count_live: 83
             }
         ]
-}
+})
