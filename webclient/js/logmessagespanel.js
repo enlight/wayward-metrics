@@ -9,7 +9,9 @@ WaywardMonitoring.LogMessagesGridPanel = Ext.extend(Ext.grid.GridPanel, {
                 url: 'data/sample-log-messages.js',
                 root: 'messages',
                 totalProperty: 'messageCount',
+                idProperty: 'id',
                 fields: [
+                        {name: 'id', type: 'int'},
                         {name: 'timestamp', type: 'int'},
                         'channel',
                         'message',
