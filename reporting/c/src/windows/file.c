@@ -40,10 +40,11 @@ wwm_file_destroy(wwm_file_t file)
 int
 wwm_file_open(wwm_file_t file, const char *filename, enum wwm_file_mode_e mode)
 {
-    // Make sure any open file here is closed.
+    int mapped_mode = 0;
+
+	// Make sure any open file here is closed.
     wwm_file_close(file);
 
-    int mapped_mode = 0;
     switch (mode)
     {
         case WWM_FILE_READ_ONLY:
