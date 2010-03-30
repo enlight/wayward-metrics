@@ -2,8 +2,7 @@
 #define _WAYWARD_METRICS_CODEC_H_
 
 #include "wayward/metrics/buffer.h"
-
-#include <sys/time.h>
+#include "wayward/metrics/time.h"
 
 extern wwm_buffer_t wwm_codec_push_begin(wwm_buffer_t buf);
 extern wwm_buffer_t wwm_codec_push_begin_tuple(wwm_buffer_t buf, int num_items);

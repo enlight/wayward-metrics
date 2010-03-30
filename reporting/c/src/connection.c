@@ -3,7 +3,7 @@
 #include "wayward/metrics/allocator.h"
 #include "wayward/metrics/buffer.h"
 
-#include <unistd.h>
+//#include <unistd.h>
 
 //------------------------------------------------------------------------------
 /**

@@ -2,8 +2,8 @@
 
 #include "wayward/metrics/allocator.h"
 #include "wayward/metrics/config.h"
-
-#include <pthread.h>
+#include "wayward/metrics/thread.h"
+//#include <pthread.h>
 
 // This uses a concurrent queue based on http://www.cs.rochester.edu/u/michael/PODC96.html
 // but without the locks since we have a single reader and a single writer
@@ -17,9 +17,9 @@ struct wwm_message_queue_t_
 {
     wwm_connection_t        connection;
     wwm_file_t              file;
-    pthread_key_t           per_thread_queue_key;
-    pthread_t               background_thread;
-    pthread_attr_t          background_thread_attr;
+    wwm_thread_key_t        per_thread_queue_key;
+    wwm_thread_handle_t     background_thread;
+    //pthread_attr_t          background_thread_attr;
     _wwm_per_thread_queue_t per_thread_queue_slist;
     wwm_buffer_t            send_buffer;
     volatile bool           shutdown_requested;
@@ -37,7 +37,7 @@ struct _wwm_per_thread_queue_t_
     _wwm_per_thread_queue_t         next;
 };
 
-static void                   * _wwm_message_queue_start(void* queue);
+static WWM_THREADPROC_RETTYPE WWM_THREADPROC _wwm_message_queue_start(void* queue);
 static void                     _wwm_message_queue_run(wwm_message_queue_t queue);
 static void                     _wwm_message_queue_add_per_thread_queue(wwm_message_queue_t queue, _wwm_per_thread_queue_t per_thread_queue);
 static void                     _wwm_message_queue_remove_per_thread_queue(wwm_message_queue_t queue, _wwm_per_thread_queue_t per_thread_queue);
@@ -60,11 +60,12 @@ wwm_message_queue_new(void)
     queue->file = NULL;
     queue->send_buffer = wwm_buffer_new(5000);
 
-    (void)pthread_key_create(&(queue->per_thread_queue_key), _wwm_per_thread_queue_kill);
+    (void)wwm_thread_key_create(&(queue->per_thread_queue_key), _wwm_per_thread_queue_kill);
 
-    (void)pthread_attr_init(&(queue->background_thread_attr));
-    (void)pthread_attr_setdetachstate(&(queue->background_thread_attr), PTHREAD_CREATE_JOINABLE);
-    (void)pthread_create(&(queue->background_thread), &(queue->background_thread_attr), _wwm_message_queue_start, (void*)queue);
+	// FIXME: took this out for now, the thread is joinable by default anyway
+    //(void)pthread_attr_init(&(queue->background_thread_attr));
+    //(void)pthread_attr_setdetachstate(&(queue->background_thread_attr), PTHREAD_CREATE_JOINABLE);
+	(void)wwm_thread_create(&(queue->background_thread), NULL/*&(queue->background_thread_attr)*/, _wwm_message_queue_start, (void*)queue);
     return queue;
 }
 
@@ -75,11 +76,12 @@ void
 wwm_message_queue_destroy(wwm_message_queue_t queue)
 {
     queue->shutdown_requested = TRUE;
-    (void)pthread_join(queue->background_thread, NULL);
+    (void)wwm_thread_join(queue->background_thread, NULL);
 
-    (void)pthread_attr_destroy(&(queue->background_thread_attr));
+	// FIXME: took this out for now
+    //(void)pthread_attr_destroy(&(queue->background_thread_attr));
 
-    (void)pthread_key_delete(queue->per_thread_queue_key);
+    (void)wwm_thread_key_delete(queue->per_thread_queue_key);
 
     if (NULL != queue->connection)
     {
@@ -117,11 +119,12 @@ wwm_message_queue_set_file(wwm_message_queue_t queue, wwm_file_t file)
 //------------------------------------------------------------------------------
 /**
 */
-static void*
+static WWM_THREADPROC_RETTYPE
+WWM_THREADPROC
 _wwm_message_queue_start(void* queue)
 {
     _wwm_message_queue_run((wwm_message_queue_t)queue);
-    return NULL; // Implied pthread_exit(NULL)
+    return 0; // Implied pthread_exit(NULL)
 }
 
 //------------------------------------------------------------------------------
@@ -179,11 +182,11 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
 void
 wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_buffer_t buffer)
 {
-    _wwm_per_thread_queue_t ptqueue = pthread_getspecific(queue->per_thread_queue_key);
+    _wwm_per_thread_queue_t ptqueue = wwm_thread_getspecific(queue->per_thread_queue_key);
     if (NULL == ptqueue)
     {
         ptqueue = _wwm_per_thread_queue_new(queue);
-        pthread_setspecific(queue->per_thread_queue_key, ptqueue);
+        wwm_thread_setspecific(queue->per_thread_queue_key, ptqueue);
     }
     _wwm_per_thread_queue_enqueue(ptqueue, buffer);
 }
@@ -285,7 +288,7 @@ _wwm_per_thread_queue_kill(void* per_thread_queue)
 static void
 _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_buffer_t buffer)
 {
-    __sync_synchronize();
+	MemoryBarrier();
     wwm_buffer_set_next(per_thread_queue->tail, buffer);
     per_thread_queue->tail = buffer;
 }

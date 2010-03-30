@@ -2,7 +2,7 @@
 #define _WAYWARD_METRICS_BUFFER_H_
 
 #include <stddef.h>
-#include <stdint.h>
+#include "wayward/metrics/types.h"
 
 typedef struct wwm_buffer_t_ * wwm_buffer_t;
 

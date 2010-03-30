@@ -2,9 +2,8 @@
 #define _WAYWARD_METRICS_REPORTING_PRIVATE_REPORTER_H_
 
 #include "wayward/metrics/message_queue.h"
-
-#include <pthread.h>
-#include <stdint.h>
+#include "wayward/metrics/types.h"
+#include "wayward/metrics/thread.h"
 
 #define STACKTRACE_BUFFER_LENGTH 100
 #define MAX_CONTEXT_DEPTH 100
@@ -16,7 +15,7 @@ typedef struct _wwm_reporter_per_thread_data_t_ *_wwm_reporter_per_thread_data_t
 struct wwm_reporter_t_
 {
     wwm_message_queue_t             message_queue;
-    pthread_key_t                   per_thread_data_key;
+    wwm_thread_key_t                per_thread_data_key;
     _wwm_reporter_per_thread_data_t per_thread_data_slist;
 };
 

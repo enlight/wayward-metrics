@@ -9,7 +9,7 @@
 #include "wayward/metrics/reporting/private/reporter.h"
 #include "wayward/metrics/thread.h"
 
-#include <execinfo.h>
+//#include <execinfo.h>
 
 //------------------------------------------------------------------------------
 /**
@@ -19,7 +19,7 @@ wwm_reporter_new(void)
 {
     wwm_reporter_t reporter = (wwm_reporter_t)g_wwm_allocator.calloc(1, sizeof(struct wwm_reporter_t_));
 
-    (void)pthread_key_create(&(reporter->per_thread_data_key), _wwm_reporter_per_thread_data_kill);
+    (void)wwm_thread_key_create(&(reporter->per_thread_data_key), _wwm_reporter_per_thread_data_kill);
 
     reporter->message_queue = wwm_message_queue_new();
     return reporter;
@@ -122,11 +122,11 @@ wwm_reporter_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
 _wwm_reporter_per_thread_data_t
 _wwm_reporter_get_per_thread_data(wwm_reporter_t reporter)
 {
-    _wwm_reporter_per_thread_data_t ptdata = pthread_getspecific(reporter->per_thread_data_key);
+    _wwm_reporter_per_thread_data_t ptdata = wwm_thread_getspecific(reporter->per_thread_data_key);
     if (NULL == ptdata)
     {
         ptdata = _wwm_reporter_per_thread_data_new(reporter);
-        pthread_setspecific(reporter->per_thread_data_key, ptdata);
+        wwm_thread_setspecific(reporter->per_thread_data_key, ptdata);
     }
     return ptdata;
 }
