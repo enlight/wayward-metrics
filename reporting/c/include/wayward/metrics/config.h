@@ -23,5 +23,11 @@ typedef int bool;
 #define WWM_THREADPROC_RETTYPE void*
 #endif
 
+#ifdef WIN32
+#define wwm_sleep Sleep
+#else
+#define wwm_sleep sleep
+#endif
+
 #endif
 

@@ -1,9 +1,9 @@
 #include "wayward/metrics/connection.h"
-
 #include "wayward/metrics/allocator.h"
 #include "wayward/metrics/buffer.h"
-
-//#include <unistd.h>
+#ifndef WIN32
+#include <unistd.h>
+#endif
 
 //------------------------------------------------------------------------------
 /**

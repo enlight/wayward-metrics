@@ -42,7 +42,7 @@ wwm_file_open(wwm_file_t file, const char *filename, enum wwm_file_mode_e mode)
 {
     int mapped_mode = 0;
 
-	// Make sure any open file here is closed.
+    // Make sure any open file here is closed.
     wwm_file_close(file);
 
     switch (mode)

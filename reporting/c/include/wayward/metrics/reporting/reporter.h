@@ -7,6 +7,7 @@ typedef struct wwm_reporter_t_ *wwm_reporter_t;
 
 extern wwm_reporter_t   wwm_reporter_new(void);
 extern void             wwm_reporter_destroy(wwm_reporter_t reporter);
+extern void             wwm_reporter_exit_thread(wwm_reporter_t reporter);
 
 extern void             wwm_reporter_connect(wwm_reporter_t reporter, const char *hostname, int portnumber);
 extern void             wwm_reporter_log_to_file(wwm_reporter_t reporter, const char *filename);

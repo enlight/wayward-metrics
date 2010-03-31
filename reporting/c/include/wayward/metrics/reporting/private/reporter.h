@@ -45,7 +45,6 @@ extern void _wwm_reporter_remove_per_thread_data(wwm_reporter_t reporter, _wwm_r
 
 extern _wwm_reporter_per_thread_data_t  _wwm_reporter_per_thread_data_new(wwm_reporter_t owner);
 extern void _wwm_reporter_per_thread_data_destroy(_wwm_reporter_per_thread_data_t per_thread_data);
-extern void _wwm_reporter_per_thread_data_kill(void* per_thread_data);
 
 extern void _wwm_reporter_per_thread_data_push_context(_wwm_reporter_per_thread_data_t, uint64_t context_id);
 extern void _wwm_reporter_per_thread_data_pop_context(_wwm_reporter_per_thread_data_t);

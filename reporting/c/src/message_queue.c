@@ -1,9 +1,7 @@
 #include "wayward/metrics/message_queue.h"
-
 #include "wayward/metrics/allocator.h"
 #include "wayward/metrics/config.h"
 #include "wayward/metrics/thread.h"
-//#include <pthread.h>
 
 // This uses a concurrent queue based on http://www.cs.rochester.edu/u/michael/PODC96.html
 // but without the locks since we have a single reader and a single writer
@@ -18,8 +16,7 @@ struct wwm_message_queue_t_
     wwm_connection_t        connection;
     wwm_file_t              file;
     wwm_thread_key_t        per_thread_queue_key;
-    wwm_thread_handle_t     background_thread;
-    //pthread_attr_t          background_thread_attr;
+    wwm_thread_t*           background_thread;
     _wwm_per_thread_queue_t per_thread_queue_slist;
     wwm_buffer_t            send_buffer;
     volatile bool           shutdown_requested;
@@ -44,7 +41,6 @@ static void                     _wwm_message_queue_remove_per_thread_queue(wwm_m
 
 static _wwm_per_thread_queue_t  _wwm_per_thread_queue_new(wwm_message_queue_t owner);
 static void                     _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t per_thread_queue);
-static void                     _wwm_per_thread_queue_kill(void*);
 static void                     _wwm_per_thread_queue_enqueue(_wwm_per_thread_queue_t per_thread_queue, wwm_buffer_t buffer);
 static wwm_buffer_t             _wwm_per_thread_queue_dequeue(_wwm_per_thread_queue_t per_thread_queue);
 
@@ -60,12 +56,10 @@ wwm_message_queue_new(void)
     queue->file = NULL;
     queue->send_buffer = wwm_buffer_new(5000);
 
-    (void)wwm_thread_key_create(&(queue->per_thread_queue_key), _wwm_per_thread_queue_kill);
+    (void)wwm_thread_key_create(&(queue->per_thread_queue_key));
 
-	// FIXME: took this out for now, the thread is joinable by default anyway
-    //(void)pthread_attr_init(&(queue->background_thread_attr));
-    //(void)pthread_attr_setdetachstate(&(queue->background_thread_attr), PTHREAD_CREATE_JOINABLE);
-	(void)wwm_thread_create(&(queue->background_thread), NULL/*&(queue->background_thread_attr)*/, _wwm_message_queue_start, (void*)queue);
+    queue->background_thread = wwm_thread_new();
+    (void)wwm_thread_start(queue->background_thread, _wwm_message_queue_start, (void*)queue);
     return queue;
 }
 
@@ -78,8 +72,7 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
     queue->shutdown_requested = TRUE;
     (void)wwm_thread_join(queue->background_thread, NULL);
 
-	// FIXME: took this out for now
-    //(void)pthread_attr_destroy(&(queue->background_thread_attr));
+    wwm_thread_destroy(queue->background_thread);
 
     (void)wwm_thread_key_delete(queue->per_thread_queue_key);
 
@@ -96,6 +89,22 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
     wwm_buffer_destroy(queue->send_buffer);
 
     g_wwm_allocator.free(queue);
+}
+
+//------------------------------------------------------------------------------
+/**
+    If a thread makes use of a wwm_message_queue_t instance it should call this 
+    function prior to termination to ensure that any thread-specific resources 
+    obtained by the wwm_message_queue_t instance are released.
+*/
+void
+wwm_message_queue_exit_thread(wwm_message_queue_t queue)
+{
+    void* ptq = wwm_thread_getspecific(queue->per_thread_queue_key);
+    if (NULL != ptq)
+    {
+        _wwm_per_thread_queue_destroy((_wwm_per_thread_queue_t)ptq);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -268,18 +277,10 @@ _wwm_per_thread_queue_new(wwm_message_queue_t owner)
 static void
 _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t per_thread_queue)
 {
+    per_thread_queue->thread_exited = TRUE; // FIXME: kind of pointless isn't it?
     _wwm_message_queue_remove_per_thread_queue(per_thread_queue->owner, per_thread_queue);
 
     // XXX: Destroy any remaining items in the queue?
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-static void
-_wwm_per_thread_queue_kill(void* per_thread_queue)
-{
-    ((_wwm_per_thread_queue_t)per_thread_queue)->thread_exited = TRUE;
 }
 
 //------------------------------------------------------------------------------

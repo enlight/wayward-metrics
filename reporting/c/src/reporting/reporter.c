@@ -1,5 +1,4 @@
 #include "wayward/metrics/reporting/reporter.h"
-
 #include "wayward/metrics/allocator.h"
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/codec.h"
@@ -8,8 +7,7 @@
 #include "wayward/metrics/reporting/constants.h"
 #include "wayward/metrics/reporting/private/reporter.h"
 #include "wayward/metrics/thread.h"
-
-//#include <execinfo.h>
+#include "wayward/metrics/socket.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -19,7 +17,7 @@ wwm_reporter_new(void)
 {
     wwm_reporter_t reporter = (wwm_reporter_t)g_wwm_allocator.calloc(1, sizeof(struct wwm_reporter_t_));
 
-    (void)wwm_thread_key_create(&(reporter->per_thread_data_key), _wwm_reporter_per_thread_data_kill);
+    (void)wwm_thread_key_create(&(reporter->per_thread_data_key));
 
     reporter->message_queue = wwm_message_queue_new();
     return reporter;
@@ -32,7 +30,30 @@ void
 wwm_reporter_destroy(wwm_reporter_t reporter)
 {
     wwm_message_queue_destroy(reporter->message_queue);
+    // TODO: might be a good idea to assert here that thread-specific data
+    // has been cleaned up for all threads
+    (void)wwm_thread_key_delete(reporter->per_thread_data_key);
     g_wwm_allocator.free(reporter);
+}
+
+//------------------------------------------------------------------------------
+/**
+    If a thread makes use of a wwm_reporter_t instance it should call this 
+    function prior to termination to ensure that any thread-specific resources 
+    obtained by the wwm_reporter_t instance are released.
+*/
+void
+wwm_reporter_exit_thread(wwm_reporter_t reporter)
+{
+    void *ptd = NULL;
+
+    wwm_message_queue_exit_thread(reporter->message_queue);
+
+    ptd = wwm_thread_getspecific(reporter->per_thread_data_key);
+    if (NULL != ptd)
+    {
+        _wwm_reporter_per_thread_data_destroy((_wwm_reporter_per_thread_data_t)ptd);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -91,7 +112,8 @@ wwm_buffer_t
 wwm_reporter_populate_base_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
 {
     _wwm_reporter_per_thread_data_t ptdata = _wwm_reporter_get_per_thread_data(reporter);
-    int stack_frame_count = backtrace(ptdata->stacktrace_buffer, STACKTRACE_BUFFER_LENGTH);
+    // FIXME: need a backtrace() alternative for Windows
+    //int stack_frame_count = backtrace(ptdata->stacktrace_buffer, STACKTRACE_BUFFER_LENGTH);
 
     struct timeval now;
     (void)gettimeofday(&now, NULL);
@@ -201,16 +223,6 @@ _wwm_reporter_per_thread_data_destroy(_wwm_reporter_per_thread_data_t per_thread
     _wwm_reporter_remove_per_thread_data(per_thread_data->owner, per_thread_data);
     g_wwm_allocator.free(per_thread_data->stacktrace_buffer);
 }
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-_wwm_reporter_per_thread_data_kill(void* per_thread_data)
-{
-    _wwm_reporter_per_thread_data_destroy((_wwm_reporter_per_thread_data_t)per_thread_data);
-}
-
 
 //------------------------------------------------------------------------------
 /**

@@ -25,11 +25,13 @@ wwm_reporter_context_create(wwm_reporter_t reporter, uint64_t context_id, const 
 void
 wwm_reporter_context_enter(wwm_reporter_t reporter, uint64_t context_id)
 {
-    _wwm_reporter_per_thread_data_t ptdata = _wwm_reporter_get_per_thread_data(reporter);
-	wwm_buffer_t data = wwm_buffer_new(512);
+    _wwm_reporter_per_thread_data_t ptdata = NULL;
+    wwm_buffer_t data = NULL;
 
+    ptdata = _wwm_reporter_get_per_thread_data(reporter);
     _wwm_reporter_per_thread_data_push_context(ptdata, context_id);
 
+    data = wwm_buffer_new(512);
     data = wwm_reporter_populate_base_record_data(reporter, data);
     data = wwm_codec_push_begin_tuple(data, 2);
     data = wwm_codec_push_int32(data, METRICS_EVENT_CONTEXT_ENTER);
@@ -43,14 +45,15 @@ wwm_reporter_context_enter(wwm_reporter_t reporter, uint64_t context_id)
 void
 wwm_reporter_context_exit(wwm_reporter_t reporter)
 {
-    _wwm_reporter_per_thread_data_t ptdata = _wwm_reporter_get_per_thread_data(reporter);
-	wwm_buffer_t data = wwm_buffer_new(512);
+    _wwm_reporter_per_thread_data_t ptdata = NULL;
+    wwm_buffer_t data = NULL;
 
+    ptdata = _wwm_reporter_get_per_thread_data(reporter);
     _wwm_reporter_per_thread_data_pop_context(ptdata);
   
+    data = wwm_buffer_new(512);
     data = wwm_reporter_populate_base_record_data(reporter, data);
     data = wwm_codec_push_begin_tuple(data, 1);
     data = wwm_codec_push_int32(data, METRICS_EVENT_CONTEXT_EXIT);
     wwm_reporter_record_data(reporter, data);
 }
-

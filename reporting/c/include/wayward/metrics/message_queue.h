@@ -9,6 +9,7 @@ typedef struct wwm_message_queue_t_ *wwm_message_queue_t;
 
 wwm_message_queue_t     wwm_message_queue_new(void);
 void                    wwm_message_queue_destroy(wwm_message_queue_t queue);
+void                    wwm_message_queue_exit_thread(wwm_message_queue_t queue);
 
 void                    wwm_message_queue_request_shutdown(wwm_message_queue_t queue);
 
