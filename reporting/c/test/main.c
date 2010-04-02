@@ -1,15 +1,13 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/reporting/reporter.h"
 #include "wayward/metrics/allocator_system.h"
 #include "wayward/metrics/codec.h"
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/config.h"
+#include "wayward/metrics/socket.h"
 #include <stdlib.h>
 
 #ifdef WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <Windows.h>
 #define wwm_sleep Sleep
 #else // not WIN32
 #define wwm_sleep sleep
@@ -22,6 +20,7 @@ main(int argc, char ** argv)
     int i;
 
     wwm_allocator_system_initialize();
+    wwm_socket_system_initialize();
     reporter = wwm_reporter_new();
     // wwm_reporter_log_to_network(reporter, "localhost", 8346);
     wwm_reporter_log_to_file(reporter, "temp.dat");
@@ -41,6 +40,7 @@ main(int argc, char ** argv)
 
     wwm_reporter_exit_thread(reporter);
     wwm_reporter_destroy(reporter);
+    wwm_socket_system_cleanup();
 
     return 0;
 }

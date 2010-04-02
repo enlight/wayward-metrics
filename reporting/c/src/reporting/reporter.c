@@ -64,9 +64,9 @@ wwm_reporter_exit_thread(wwm_reporter_t reporter)
 void
 wwm_reporter_log_to_network(wwm_reporter_t reporter, const char *hostname, int portnumber)
 {
-    int sockfd = wwm_open_socket(hostname, portnumber);
+    wwm_socket_t sockd = wwm_socket_open(hostname, portnumber); // FIXME: no one closes this socket
     wwm_connection_t conn = wwm_connection_new();
-    wwm_connection_set_sockfd(conn, sockfd);
+    wwm_connection_set_socket(conn, sockd);
     wwm_message_queue_set_connection(reporter->message_queue, conn);
 }
 

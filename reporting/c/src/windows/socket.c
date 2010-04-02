@@ -6,33 +6,64 @@
 
 //------------------------------------------------------------------------------
 /**
+    Initialize WinSock2, must be done before any sockets are created.
 */
-int
-wwm_open_socket(char const *hostname,
-                int portnumber)
+void wwm_socket_system_initialize(void)
 {
-    int sockfd;
+    WSADATA wsaData;
+    int result = WSAStartup(MAKEWORD(2,2), &wsaData);
+    if (0 != result)
+    {
+        // failed
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    Cleanup WinSock2.
+*/
+void wwm_socket_system_cleanup(void)
+{
+    WSACleanup();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_socket_t
+wwm_socket_open(char const *hostname, int portnumber)
+{
+    wwm_socket_t sockd;
     struct sockaddr_in addr;
     struct hostent *he;
 
     he = gethostbyname(hostname);
     if (he == NULL)
     {
-        return -ENOENT;
+        return INVALID_SOCKET;
     }
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(portnumber);
     addr.sin_addr.s_addr = * (uint32_t *) he->h_addr_list[0];
 
-    sockfd = socket(PF_INET, SOCK_STREAM, 0);
-    if (connect(sockfd, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+    sockd = socket(PF_INET, SOCK_STREAM, 0);
+    if (connect(sockd, (struct sockaddr *) &addr, sizeof(addr)) == SOCKET_ERROR)
     {
-        int result = -errno;
-        closesocket(sockfd);
-        return result;
+        closesocket(sockd);
+        return INVALID_SOCKET;
     }
 
-    return sockfd;
+    return sockd;
 }
 
+//------------------------------------------------------------------------------
+/**
+    Sends the given data on the given socket and returns the number of bytes
+    sent.
+*/
+int
+wwm_socket_send(wwm_socket_t sockd, const char* buffer, size_t buffer_len)
+{
+    return send(sockd, buffer, buffer_len, 0);
+}

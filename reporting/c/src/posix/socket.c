@@ -10,11 +10,27 @@
 //------------------------------------------------------------------------------
 /**
 */
-int
-wwm_open_socket(char const *hostname,
+void wwm_socket_system_initialize(void)
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void wwm_socket_system_cleanup(void)
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_socket_t
+wwm_socket_open(char const *hostname,
                 int portnumber)
 {
-    int sockfd;
+    wwm_socket_t sockfd;
     struct sockaddr_in addr;
     struct hostent *he;
 
@@ -39,3 +55,13 @@ wwm_open_socket(char const *hostname,
     return sockfd;
 }
 
+//------------------------------------------------------------------------------
+/**
+    Sends the given data on the given socket and returns the number of bytes
+    sent.
+*/
+int
+wwm_socket_send(wwm_socket_t sockd, const char* buffer, size_t buffer_len)
+{
+    return write(sockd, buffer, buffer_len, 0);
+}

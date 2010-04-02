@@ -8,7 +8,7 @@
 */
 struct wwm_connection_t_
 {
-    int         sockfd;
+    wwm_socket_t sockd;
 };
 
 //------------------------------------------------------------------------------
@@ -29,19 +29,19 @@ wwm_connection_new(void)
 //------------------------------------------------------------------------------
 /**
 */
-int
-wwm_connection_get_sockfd(wwm_connection_t conn)
+wwm_socket_t
+wwm_connection_get_socket(wwm_connection_t conn)
 {
-    return conn->sockfd;
+    return conn->sockd;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-wwm_connection_set_sockfd(wwm_connection_t conn, int sockfd)
+wwm_connection_set_socket(wwm_connection_t conn, wwm_socket_t sockd)
 {
-    conn->sockfd = sockfd;
+    conn->sockd = sockd;
 }
 
 //------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ int
 wwm_connection_send_buffer(wwm_connection_t conn,
                            const wwm_buffer_t buffer)
 {
-    int bytes_written = write(conn->sockfd, wwm_buffer_bytes(buffer), wwm_buffer_length(buffer));
+    int bytes_written = wwm_socket_send(conn->sockd, wwm_buffer_bytes(buffer), wwm_buffer_length(buffer));
     // XXX: Check for errors...
     return bytes_written;
 }
