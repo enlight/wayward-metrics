@@ -8,7 +8,8 @@
 /**
     Initialize WinSock2, must be done before any sockets are created.
 */
-void wwm_socket_system_initialize(void)
+void 
+wwm_socket_system_initialize(void)
 {
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2,2), &wsaData);
@@ -22,7 +23,8 @@ void wwm_socket_system_initialize(void)
 /**
     Cleanup WinSock2.
 */
-void wwm_socket_system_cleanup(void)
+void 
+wwm_socket_system_cleanup(void)
 {
     WSACleanup();
 }

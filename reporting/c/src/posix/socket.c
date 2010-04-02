@@ -10,7 +10,8 @@
 //------------------------------------------------------------------------------
 /**
 */
-void wwm_socket_system_initialize(void)
+void 
+wwm_socket_system_initialize(void)
 {
     // empty
 }
@@ -18,7 +19,8 @@ void wwm_socket_system_initialize(void)
 //------------------------------------------------------------------------------
 /**
 */
-void wwm_socket_system_cleanup(void)
+void 
+wwm_socket_system_cleanup(void)
 {
     // empty
 }
