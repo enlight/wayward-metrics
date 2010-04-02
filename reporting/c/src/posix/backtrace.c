@@ -1,3 +1,4 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/backtrace.h"
 #include <execinfo.h>
 

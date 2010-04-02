@@ -1,3 +1,4 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/codec.h"
 
 #include <string.h>

@@ -1,11 +1,7 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/allocator.h"
 #include <string.h>
-#ifdef WIN32
-#include <WinSock2.h>
-#else
-#include <unistd.h>
-#endif
 
 //------------------------------------------------------------------------------
 /**

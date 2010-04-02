@@ -10,6 +10,7 @@ set(include_wayward_metrics_src
     ../include/wayward/metrics/file.h
     ../include/wayward/metrics/message_queue.h
     ../include/wayward/metrics/socket.h
+    ../include/wayward/metrics/stdwwm.h
     ../include/wayward/metrics/backtrace.h
     ../include/wayward/metrics/time.h
     ../include/wayward/metrics/thread.h
@@ -24,6 +25,12 @@ set(include_wayward_metrics_reporting_src
 )
 set(include_wayward_metrics_reporting_private_src
     ../include/wayward/metrics/reporting/private/reporter.h
+)
+set(include_wayward_metrics_posix_src
+    ../include/wayward/metrics/posix/platform.h
+)
+set(include_wayward_metrics_windows_src
+    ../include/wayward/metrics/windows/platform.h
 )
 set(src_src
     allocator.c
@@ -62,11 +69,13 @@ set(waywardmetrics_SRCS
 if(WIN32)
     set(waywardmetrics_SRCS
         ${waywardmetrics_SRCS}
+        ${include_wayward_metrics_windows_src}
         ${src_windows_src}
     )
 else()
     set(waywardmetrics_SRCS
         ${waywardmetrics_SRCS}
+        ${include_wayward_metrics_posix_src}
         ${src_posix_src}
     )
 endif()
@@ -75,6 +84,8 @@ endif()
 source_group(include\\wayward\\metrics FILES ${include_wayward_metrics_src})
 source_group(include\\wayward\\metrics\\reporting FILES ${include_wayward_metrics_reporting_src})
 source_group(include\\wayward\\metrics\\private FILES ${include_wayward_metrics_reporting_private_src})
+source_group(include\\wayward\\metrics\\posix FILES ${include_wayward_metrics_posix_src})
+source_group(include\\wayward\\metrics\\windows FILES ${include_wayward_metrics_windows_src})
 source_group(src FILES ${src_src})
 source_group(src\\posix FILES ${src_posix_src})
 source_group(src\\reporting FILES ${src_reporting_src})

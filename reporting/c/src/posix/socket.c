@@ -1,3 +1,4 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/socket.h"
 
 #include <errno.h>
@@ -5,7 +6,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <unistd.h>
 
 //------------------------------------------------------------------------------
 /**

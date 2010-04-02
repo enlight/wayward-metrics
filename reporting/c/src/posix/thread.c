@@ -1,6 +1,6 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/thread.h"
 #include "wayward/metrics/allocator.h"
-#include <pthread.h>
 #include <stdio.h>
 
 struct wwm_thread_t_

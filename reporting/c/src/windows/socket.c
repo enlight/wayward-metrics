@@ -1,8 +1,8 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/socket.h"
 #include "wayward/metrics/types.h"
 #include <errno.h>
 #include <stddef.h>
-#include <WinSock2.h>
 
 //------------------------------------------------------------------------------
 /**

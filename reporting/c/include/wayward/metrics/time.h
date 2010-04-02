@@ -3,8 +3,6 @@
 
 #ifdef WIN32
 
-#include <WinSock2.h> // for timeval
-
 extern int gettimeofday(struct timeval* timestamp, void* tz);
 
 #else // if not WIN32

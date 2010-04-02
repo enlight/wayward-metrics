@@ -1,3 +1,4 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/reporting/reporter.h"
 #include "wayward/metrics/allocator.h"
 #include "wayward/metrics/buffer.h"

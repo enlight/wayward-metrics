@@ -1,10 +1,8 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/thread.h"
 #include "wayward/metrics/allocator.h"
 #include <stdio.h>
 #include <errno.h>
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <process.h>
 
 struct wwm_thread_t_
 {

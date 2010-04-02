@@ -1,3 +1,4 @@
+#include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/message_queue.h"
 #include "wayward/metrics/allocator.h"
 #include "wayward/metrics/config.h"

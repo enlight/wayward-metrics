@@ -7,19 +7,10 @@
 typedef struct wwm_thread_t_* wwm_thread_t;
 
 #ifdef WIN32
-
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
 typedef DWORD wwm_thread_key_t;
-
-#else // if not WIN32
-
-#include <pthread.h>
-
+#else
 typedef pthread_key_t wwm_thread_key_t;
-
-#endif // WIN32
+#endif
 
 extern uint64_t wwm_thread_get_current_id(void);
 
