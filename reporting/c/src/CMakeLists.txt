@@ -10,6 +10,7 @@ set(include_wayward_metrics_src
     ../include/wayward/metrics/file.h
     ../include/wayward/metrics/message_queue.h
     ../include/wayward/metrics/socket.h
+    ../include/wayward/metrics/backtrace.h
     ../include/wayward/metrics/time.h
     ../include/wayward/metrics/thread.h
     ../include/wayward/metrics/types.h
@@ -41,11 +42,13 @@ set(src_reporting_src
 set(src_posix_src
     posix/file.c
     posix/socket.c
+    posix/backtrace.c
     posix/thread.c
 )
 set(src_windows_src
     windows/file.c
     windows/socket.c
+    windows/backtrace.c
     windows/time.c
     windows/thread.c
 )

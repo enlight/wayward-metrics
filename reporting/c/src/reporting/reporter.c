@@ -8,6 +8,7 @@
 #include "wayward/metrics/reporting/private/reporter.h"
 #include "wayward/metrics/thread.h"
 #include "wayward/metrics/socket.h"
+#include "wayward/metrics/backtrace.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -112,8 +113,7 @@ wwm_buffer_t
 wwm_reporter_populate_base_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
 {
     _wwm_reporter_per_thread_data_t ptdata = _wwm_reporter_get_per_thread_data(reporter);
-    // FIXME: need a backtrace() alternative for Windows
-    //int stack_frame_count = backtrace(ptdata->stacktrace_buffer, STACKTRACE_BUFFER_LENGTH);
+    int stack_frame_count = wwm_backtrace_gather(ptdata->stacktrace_buffer, STACKTRACE_BUFFER_LENGTH);
 
     struct timeval now;
     (void)gettimeofday(&now, NULL);
