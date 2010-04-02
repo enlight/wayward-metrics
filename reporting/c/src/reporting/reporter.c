@@ -49,7 +49,7 @@ wwm_reporter_exit_thread(wwm_reporter_t reporter)
 
     wwm_message_queue_exit_thread(reporter->message_queue);
 
-    ptd = wwm_thread_getspecific(reporter->per_thread_data_key);
+    ptd = wwm_thread_key_get(reporter->per_thread_data_key);
     if (NULL != ptd)
     {
         _wwm_reporter_per_thread_data_destroy((_wwm_reporter_per_thread_data_t)ptd);
@@ -144,11 +144,11 @@ wwm_reporter_record_data(wwm_reporter_t reporter, wwm_buffer_t data)
 _wwm_reporter_per_thread_data_t
 _wwm_reporter_get_per_thread_data(wwm_reporter_t reporter)
 {
-    _wwm_reporter_per_thread_data_t ptdata = wwm_thread_getspecific(reporter->per_thread_data_key);
+    _wwm_reporter_per_thread_data_t ptdata = wwm_thread_key_get(reporter->per_thread_data_key);
     if (NULL == ptdata)
     {
         ptdata = _wwm_reporter_per_thread_data_new(reporter);
-        wwm_thread_setspecific(reporter->per_thread_data_key, ptdata);
+        wwm_thread_key_set(reporter->per_thread_data_key, ptdata);
     }
     return ptdata;
 }

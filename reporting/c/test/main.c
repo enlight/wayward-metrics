@@ -4,11 +4,15 @@
 #include "wayward/metrics/buffer.h"
 #include "wayward/metrics/config.h"
 #include <stdlib.h>
+
 #ifdef WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+#define wwm_sleep Sleep
+#else // not WIN32
+#define wwm_sleep sleep
 #endif // WIN32
 
 int

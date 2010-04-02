@@ -16,7 +16,7 @@ struct wwm_message_queue_t_
     wwm_connection_t        connection;
     wwm_file_t              file;
     wwm_thread_key_t        per_thread_queue_key;
-    wwm_thread_t*           background_thread;
+    wwm_thread_t            background_thread;
     _wwm_per_thread_queue_t per_thread_queue_slist;
     wwm_buffer_t            send_buffer;
     volatile bool           shutdown_requested;
@@ -30,7 +30,6 @@ struct _wwm_per_thread_queue_t_
     wwm_message_queue_t             owner;
     wwm_buffer_t                    head;
     wwm_buffer_t                    tail;
-    bool                            thread_exited;
     _wwm_per_thread_queue_t         next;
 };
 
@@ -100,7 +99,7 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
 void
 wwm_message_queue_exit_thread(wwm_message_queue_t queue)
 {
-    void* ptq = wwm_thread_getspecific(queue->per_thread_queue_key);
+    void* ptq = wwm_thread_key_get(queue->per_thread_queue_key);
     if (NULL != ptq)
     {
         _wwm_per_thread_queue_destroy((_wwm_per_thread_queue_t)ptq);
@@ -191,11 +190,11 @@ _wwm_message_queue_run(wwm_message_queue_t queue)
 void
 wwm_message_queue_enqueue(wwm_message_queue_t queue, wwm_buffer_t buffer)
 {
-    _wwm_per_thread_queue_t ptqueue = wwm_thread_getspecific(queue->per_thread_queue_key);
+    _wwm_per_thread_queue_t ptqueue = wwm_thread_key_get(queue->per_thread_queue_key);
     if (NULL == ptqueue)
     {
         ptqueue = _wwm_per_thread_queue_new(queue);
-        wwm_thread_setspecific(queue->per_thread_queue_key, ptqueue);
+        wwm_thread_key_set(queue->per_thread_queue_key, ptqueue);
     }
     _wwm_per_thread_queue_enqueue(ptqueue, buffer);
 }
@@ -263,7 +262,6 @@ _wwm_per_thread_queue_new(wwm_message_queue_t owner)
     _wwm_per_thread_queue_t ptqueue = (_wwm_per_thread_queue_t)g_wwm_allocator.malloc(sizeof(struct _wwm_per_thread_queue_t_));
     ptqueue->owner = owner;
     ptqueue->head = ptqueue->tail = wwm_buffer_new(0);
-    ptqueue->thread_exited = FALSE;
     ptqueue->next = NULL;
 
     _wwm_message_queue_add_per_thread_queue(owner, ptqueue);
@@ -277,7 +275,6 @@ _wwm_per_thread_queue_new(wwm_message_queue_t owner)
 static void
 _wwm_per_thread_queue_destroy(_wwm_per_thread_queue_t per_thread_queue)
 {
-    per_thread_queue->thread_exited = TRUE; // FIXME: kind of pointless isn't it?
     _wwm_message_queue_remove_per_thread_queue(per_thread_queue->owner, per_thread_queue);
 
     // XXX: Destroy any remaining items in the queue?
