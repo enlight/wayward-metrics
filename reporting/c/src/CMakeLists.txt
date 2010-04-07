@@ -1,5 +1,8 @@
 include_directories(${WAYWARD_METRICS_SOURCE_DIR}/include)
 
+set(include_wayward_src
+    ../include/wayward/metrics.h
+)
 set(include_wayward_metrics_src
     ../include/wayward/metrics/allocator.h
     ../include/wayward/metrics/allocator_system.h
@@ -60,6 +63,7 @@ set(src_windows_src
     windows/thread.c
 )
 set(waywardmetrics_SRCS
+    ${include_wayward_src}
     ${include_wayward_metrics_src}
     ${include_wayward_metrics_reporting_src}
     ${include_wayward_metrics_reporting_private_src}
@@ -81,6 +85,7 @@ else()
 endif()
 
 # organize the source in the Visual Studio solution explorer
+source_group(include\\wayward FILES ${include_wayward_src})
 source_group(include\\wayward\\metrics FILES ${include_wayward_metrics_src})
 source_group(include\\wayward\\metrics\\reporting FILES ${include_wayward_metrics_reporting_src})
 source_group(include\\wayward\\metrics\\private FILES ${include_wayward_metrics_reporting_private_src})

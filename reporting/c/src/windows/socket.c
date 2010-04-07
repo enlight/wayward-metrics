@@ -1,8 +1,11 @@
 #include "wayward/metrics/stdwwm.h"
 #include "wayward/metrics/socket.h"
 #include "wayward/metrics/types.h"
+#include "wayward/metrics/config.h"
 #include <errno.h>
 #include <stddef.h>
+
+static bool wwm_socket_system_initialized = FALSE;
 
 //------------------------------------------------------------------------------
 /**
@@ -11,11 +14,18 @@
 void 
 wwm_socket_system_initialize(void)
 {
-    WSADATA wsaData;
-    int result = WSAStartup(MAKEWORD(2,2), &wsaData);
-    if (0 != result)
+    if (!wwm_socket_system_initialized)
     {
-        // failed
+        WSADATA wsaData;
+        int result = WSAStartup(MAKEWORD(2,2), &wsaData);
+        if (0 != result)
+        {
+            // failed
+        }
+        else
+        {
+            wwm_socket_system_initialized = TRUE;
+        }
     }
 }
 
@@ -26,7 +36,12 @@ wwm_socket_system_initialize(void)
 void 
 wwm_socket_system_cleanup(void)
 {
-    WSACleanup();
+    if (wwm_socket_system_initialized)
+    {
+        WSACleanup();
+
+        wwm_socket_system_initialized = FALSE;
+    }
 }
 
 //------------------------------------------------------------------------------

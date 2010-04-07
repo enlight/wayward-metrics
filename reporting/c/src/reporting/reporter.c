@@ -10,6 +10,7 @@
 #include "wayward/metrics/thread.h"
 #include "wayward/metrics/socket.h"
 #include "wayward/metrics/backtrace.h"
+#include "wayward/metrics/allocator_system.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -17,7 +18,12 @@
 wwm_reporter_t
 wwm_reporter_new(void)
 {
-    wwm_reporter_t reporter = (wwm_reporter_t)g_wwm_allocator.calloc(1, sizeof(struct wwm_reporter_t_));
+    wwm_reporter_t reporter;
+
+    wwm_allocator_system_initialize();
+    wwm_socket_system_initialize();
+
+    reporter = (wwm_reporter_t)g_wwm_allocator.calloc(1, sizeof(struct wwm_reporter_t_));
 
     (void)wwm_thread_key_create(&(reporter->per_thread_data_key));
 
@@ -31,18 +37,30 @@ wwm_reporter_new(void)
 void
 wwm_reporter_destroy(wwm_reporter_t reporter)
 {
+    void *ptd;
+
     wwm_message_queue_destroy(reporter->message_queue);
+
+    ptd = wwm_thread_key_get(reporter->per_thread_data_key);
+    if (NULL != ptd)
+    {
+        _wwm_reporter_per_thread_data_destroy((_wwm_reporter_per_thread_data_t)ptd);
+    }
     // TODO: might be a good idea to assert here that thread-specific data
     // has been cleaned up for all threads
     (void)wwm_thread_key_delete(reporter->per_thread_data_key);
+
     g_wwm_allocator.free(reporter);
+
+    wwm_socket_system_cleanup();
 }
 
 //------------------------------------------------------------------------------
 /**
-    If a thread makes use of a wwm_reporter_t instance it should call this 
-    function prior to termination to ensure that any thread-specific resources 
-    obtained by the wwm_reporter_t instance are released.
+    If a thread makes use of a wwm_reporter_t instance it did not create it
+    should call this function prior to termination to ensure that any 
+    thread-specific resources obtained by the wwm_reporter_t instance are 
+    released.
 */
 void
 wwm_reporter_exit_thread(wwm_reporter_t reporter)

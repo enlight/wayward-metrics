@@ -74,6 +74,8 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
 
     wwm_thread_destroy(queue->background_thread);
 
+    wwm_message_queue_exit_thread(queue);
+
     (void)wwm_thread_key_delete(queue->per_thread_queue_key);
 
     if (NULL != queue->connection)
@@ -93,9 +95,10 @@ wwm_message_queue_destroy(wwm_message_queue_t queue)
 
 //------------------------------------------------------------------------------
 /**
-    If a thread makes use of a wwm_message_queue_t instance it should call this 
-    function prior to termination to ensure that any thread-specific resources 
-    obtained by the wwm_message_queue_t instance are released.
+    If a thread makes use of a wwm_message_queue_t instance it did not create
+    it should call this function prior to termination to ensure that any 
+    thread-specific resources obtained by the wwm_message_queue_t instance are 
+    released.
 */
 void
 wwm_message_queue_exit_thread(wwm_message_queue_t queue)
