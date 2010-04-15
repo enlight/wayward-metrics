@@ -29,7 +29,7 @@ wsgi_server_init_python(wsgi_server_t server, const char *mod_name, const char *
     PyObject *py_str;
     PyObject *py_module;
 
-    PyEval_InitThreads();
+    //PyEval_InitThreads();
     Py_Initialize();
     wsgi_module_initialize();
 
@@ -72,7 +72,7 @@ wsgi_server_init_python(wsgi_server_t server, const char *mod_name, const char *
         return FALSE;
     }
 
-    server->py_thread_state = PyEval_SaveThread();
+    //server->py_thread_state = PyEval_SaveThread();
     return TRUE;
 }
 

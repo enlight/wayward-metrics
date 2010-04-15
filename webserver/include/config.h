@@ -23,5 +23,6 @@ typedef struct evhttp *evhttp_t;
 typedef struct evhttp_request *evhttp_request_t;
 typedef struct evkeyvalq *evkeyvalq_t;
 typedef struct evkeyval *evkeyval_t;
+typedef struct evbuffer *evbuffer_t;
 
 #endif _WAYWARD_METRICS_CONFIG_H_

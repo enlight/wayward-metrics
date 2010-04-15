@@ -7,12 +7,14 @@
 #include "event2/event_struct.h"
 #include "event2/http.h"
 #include "event2/http_struct.h"
+#include "event2/buffer.h"
 
 struct wsgi_request_t_
 {
     PyObject_HEAD
     wsgi_context_t context;
     PyObject *environ;
+    PyObject *response_status;
     bool response_headers_packed;
     PyObject *response_headers;
     PyObject *app_result; // returned by the WSGI application
@@ -60,6 +62,7 @@ _wsgi_request_clear_refs(wsgi_request_t request)
 {
     Py_CLEAR(request->app_result);
     Py_CLEAR(request->response_headers);
+    Py_CLEAR(request->response_status);
     Py_CLEAR(request->environ);
 }
 
@@ -149,9 +152,41 @@ _wsgi_pack_headers(wsgi_request_t request)
 */
 static
 bool
-_wsgi_send_body(wsgi_request_t request, const char *buffer, size_t buffer_size)
+_wsgi_request_send_body(wsgi_request_t self, const char *body, size_t body_size)
 {
-    // Implement this and we might actually be able to run this thing.
+    const char *status;
+    int status_code;
+    const char *status_reason;
+    evhttp_request_t request;
+    evbuffer_t buffer;
+
+    status = PyString_AsString(self->response_status);
+    if ((NULL == status) || (strlen(status) < 4))
+    {
+        return FALSE;
+    }
+    // According to the WSGI spec the status string provided by the 
+    // WSGI application should not have any surrounding whitespace,
+    // and should only consist of a status code and a reason phrase
+    // separated by a single space.
+    status_code = atoi(status);
+    if (0 == status_code)
+    {
+        return FALSE;
+    }
+    status_reason = &status[4]; // status code should always be 3 digits
+
+    request = wsgi_context_get_request(self->context);
+    buffer = evbuffer_new();
+    // FIXME: avoid copying the data, instead use evbuffer_add_reference() and
+    // set a callback that will release the Python object that contains the data,
+    // this will also require changing the functions that call this function to
+    // account for the non-blocking send.
+    evbuffer_add(buffer, body, body_size);
+    //Py_BEGIN_ALLOW_THREADS
+    evhttp_send_reply(request, status_code, status_reason, buffer);
+    //Py_END_ALLOW_THREADS
+    evbuffer_free(buffer);
     return TRUE;
 }
 
@@ -172,17 +207,17 @@ _wsgi_send_response(wsgi_request_t request, PyObject *app_result)
 
     while (data = PyIter_Next(it))
     {
-        Py_ssize_t data_size = PyString_Size(data);
+        Py_ssize_t body_size = PyString_Size(data);
         if (PyErr_Occurred())
         {
             Py_DECREF(data);
             break;
         }
 
-        if (data_size > 0)
+        if (body_size > 0)
         {
-            const char *buffer = PyString_AsString(data);
-            if (NULL == buffer)
+            const char *body = PyString_AsString(data);
+            if (NULL == body)
             {
                 Py_DECREF(data);
                 break;
@@ -197,7 +232,7 @@ _wsgi_send_response(wsgi_request_t request, PyObject *app_result)
                 }
             }
 
-            if (!_wsgi_send_body(request, buffer, data_size))
+            if (!_wsgi_request_send_body(request, body, body_size))
             {
                 Py_DECREF(data);
                 break;
@@ -221,6 +256,7 @@ _wsgi_send_response(wsgi_request_t request, PyObject *app_result)
         {
             return FALSE;
         }
+        // FIXME: call _wsgi_request_send_body
     }
 
     return TRUE;
@@ -286,6 +322,7 @@ _wsgi_request_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         }
 
         self->context = NULL;
+        self->response_status = NULL;
         self->response_headers = NULL;
         self->response_headers_packed = FALSE;
         self->app_result = NULL;
@@ -329,6 +366,7 @@ _wsgi_request_dealloc(wsgi_request_t self)
 
 //------------------------------------------------------------------------------
 /**
+    This will be called by the WSGI application.
 */
 PyObject * 
 _wsgi_request_start_response(wsgi_request_t self, PyObject *args)
@@ -379,6 +417,11 @@ _wsgi_request_start_response(wsgi_request_t self, PyObject *args)
 
     // We'll need to convert these from Python to C later, 
     // we don't do it now because the WSGI application may still change them.
+    tmp = self->response_status;
+    Py_INCREF(status);
+    self->response_status = status;
+    Py_XDECREF(tmp);
+
     tmp = self->response_headers;
     Py_INCREF(response_headers);
     self->response_headers = response_headers;

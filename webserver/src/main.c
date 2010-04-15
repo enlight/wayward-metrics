@@ -86,17 +86,18 @@ main(int argc, char **argv)
     http = evhttp_new(base);
     wsgi = wsgi_server_new();
 
-    wsgi_server_init_python(wsgi, "test", "test_app");
-
-    if (0 == evhttp_bind_socket(http, "127.0.0.1", 8080))
+    if (wsgi_server_init_python(wsgi, "test", "app"))
     {
-        evhttp_set_gencb(http, wsgi_handle_request, wsgi);
-        evhttp_set_timeout(http, 60);
+        if (0 == evhttp_bind_socket(http, "127.0.0.1", 8080))
+        {
+            evhttp_set_gencb(http, wsgi_handle_request, wsgi);
+            evhttp_set_timeout(http, 60);
+        }
+
+        SetConsoleCtrlHandler(ctrl_handler, TRUE);
+
+        event_base_dispatch(base); // loop
     }
-
-    SetConsoleCtrlHandler(ctrl_handler, TRUE);
-
-    event_base_dispatch(base); // loop
 
     wsgi_server_destroy(wsgi);
     evhttp_free(http);
