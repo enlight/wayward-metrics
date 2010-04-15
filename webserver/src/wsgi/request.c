@@ -158,7 +158,7 @@ _wsgi_request_send_body(wsgi_request_t self, const char *body, size_t body_size)
     int status_code;
     const char *status_reason;
     evhttp_request_t request;
-    evbuffer_t buffer;
+    evbuffer_t buffer = NULL;
 
     status = PyString_AsString(self->response_status);
     if ((NULL == status) || (strlen(status) < 4))
@@ -177,69 +177,93 @@ _wsgi_request_send_body(wsgi_request_t self, const char *body, size_t body_size)
     status_reason = &status[4]; // status code should always be 3 digits
 
     request = wsgi_context_get_request(self->context);
-    buffer = evbuffer_new();
-    // FIXME: avoid copying the data, instead use evbuffer_add_reference() and
-    // set a callback that will release the Python object that contains the data,
-    // this will also require changing the functions that call this function to
-    // account for the non-blocking send.
-    evbuffer_add(buffer, body, body_size);
-    //Py_BEGIN_ALLOW_THREADS
-    evhttp_send_reply(request, status_code, status_reason, buffer);
-    //Py_END_ALLOW_THREADS
-    evbuffer_free(buffer);
+    if (body_size > 0)
+    {
+        buffer = evbuffer_new();
+        evbuffer_add(buffer, body, body_size);
+        evhttp_send_reply(request, status_code, status_reason, buffer);
+        evbuffer_free(buffer);
+    }
+    else // just send the HTTP headers
+    {
+        evhttp_send_reply(request, status_code, status_reason, NULL);
+    }
+
     return TRUE;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
+static
 bool 
-_wsgi_send_response(wsgi_request_t request, PyObject *app_result)
+_wsgi_request_send_response(wsgi_request_t request)
 {
+    Py_ssize_t num_items;
     PyObject *it;
     PyObject *data;
 
-    it = PyObject_GetIter(app_result);
+    // If the WSGI application did not provide a Content-Length HTTP header
+    // then libevent will set it to match the size of the data sent out. 
+    //
+    // If the WSGI application did provide a Content-Length HTTP header but 
+    // it doesn't match the size of the data sent out then the client will end
+    // up somewhat confused, perhaps we should detect it and report it as an
+    // error.
+    
+    num_items = PySequence_Size(request->app_result);
+    // If PySequence_Size() failed we don't want to propagate the error.
+    PyErr_Clear();
+
+    it = PyObject_GetIter(request->app_result);
     if (NULL == it)
     {
         return FALSE;
     }
 
-    while (data = PyIter_Next(it))
+    if (1 == num_items) // the most likely case
     {
-        Py_ssize_t body_size = PyString_Size(data);
-        if (PyErr_Occurred())
+        while (data = PyIter_Next(it))
         {
-            Py_DECREF(data);
-            break;
-        }
-
-        if (body_size > 0)
-        {
-            const char *body = PyString_AsString(data);
-            if (NULL == body)
+            Py_ssize_t body_size = PyString_Size(data);
+            if (PyErr_Occurred())
             {
                 Py_DECREF(data);
                 break;
             }
-            
-            if (!request->response_headers_packed)
+            if (body_size > 0)
             {
-                if (!_wsgi_pack_headers(request))
+                const char *body = PyString_AsString(data);
+                if (NULL == body)
+                {
+                    Py_DECREF(data);
+                    break;
+                }
+
+                if (!request->response_headers_packed)
+                {
+                    if (!_wsgi_pack_headers(request))
+                    {
+                        Py_DECREF(data);
+                        break;
+                    }
+                }
+
+                if (!_wsgi_request_send_body(request, body, body_size))
                 {
                     Py_DECREF(data);
                     break;
                 }
             }
-
-            if (!_wsgi_request_send_body(request, body, body_size))
-            {
-                Py_DECREF(data);
-                break;
-            }
+            Py_DECREF(data);
         }
-
-        Py_DECREF(data);
+    }
+    else if ((-1 == num_items) || (num_items > 1))
+    {
+        // We don't know how many bytes in total we'll need to send so we'll 
+        // have to send it in chunks.
+        
+        // FIXME: implement this!
     }
 
     Py_DECREF(it);
@@ -256,7 +280,7 @@ _wsgi_send_response(wsgi_request_t request, PyObject *app_result)
         {
             return FALSE;
         }
-        // FIXME: call _wsgi_request_send_body
+        _wsgi_request_send_body(request, NULL, 0);
     }
 
     return TRUE;
@@ -300,7 +324,7 @@ void
 wsgi_request_send_response(wsgi_request_t request, PyObject *app_result)
 {
     request->app_result = app_result;
-    _wsgi_send_response(request, app_result);
+    _wsgi_request_send_response(request);
     _wsgi_result_close(app_result);
 }
 
