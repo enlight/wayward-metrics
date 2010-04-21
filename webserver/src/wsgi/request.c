@@ -2,6 +2,7 @@
 #include "config.h"
 #include "wsgi/request.h"
 #include "wsgi/context.h"
+#include "wsgi/input_stream.h"
 #include "sys/queue.h" // for TAILQ_FOREACH (must be included before the _struct.h headers)
 #include "event2/util.h"
 #include "event2/event_struct.h"
@@ -14,18 +15,14 @@ struct wsgi_request_t_
     PyObject_HEAD
     wsgi_context_t context;
     PyObject *environ;
+    wsgi_input_stream_t input; // wsgi.input
     PyObject *response_status;
     bool response_headers_packed;
     PyObject *response_headers;
     PyObject *app_result; // returned by the WSGI application
 };
 
-PyObject * _wsgi_request_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
-int        _wsgi_request_init(wsgi_request_t self, PyObject *args, PyObject *kwds);
-void       _wsgi_request_dealloc(wsgi_request_t self);
-PyObject * _wsgi_request_start_response(wsgi_request_t self, PyObject *args);
-PyObject * _wsgi_request_write(wsgi_request_t self, PyObject *args);
-bool       _wsgi_request_fill_environ(wsgi_request_t self);
+static bool _wsgi_request_fill_environ(wsgi_request_t self);
 
 //------------------------------------------------------------------------------
 /**
@@ -63,6 +60,7 @@ _wsgi_request_clear_refs(wsgi_request_t request)
     Py_CLEAR(request->app_result);
     Py_CLEAR(request->response_headers);
     Py_CLEAR(request->response_status);
+    Py_CLEAR(request->input);
     Py_CLEAR(request->environ);
 }
 
@@ -75,6 +73,16 @@ wsgi_request_destroy(wsgi_request_t request)
 {
     _wsgi_request_clear_refs(request);
     Py_DECREF(request);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Get the underlying http request associated with this wsgi request.
+*/
+evhttp_request_t 
+wsgi_request_get_http_request(wsgi_request_t request)
+{
+    return request->context ? wsgi_context_get_request(request->context) : NULL;
 }
 
 //------------------------------------------------------------------------------
@@ -109,7 +117,7 @@ wsgi_request_invoke_app(wsgi_request_t request, PyObject *app)
 */
 static
 bool
-_wsgi_pack_headers(wsgi_request_t request)
+_wsgi_pack_headers(wsgi_request_t request, int *content_len)
 {
     Py_ssize_t num_headers;
     Py_ssize_t i;
@@ -140,10 +148,38 @@ _wsgi_pack_headers(wsgi_request_t request)
         {
             return FALSE;
         }
+        if (evutil_ascii_strcasecmp(header, "Content-Length") == 0)
+        {
+            *content_len = atoi(value);
+        }
     }
 
-    request->response_headers_packed = TRUE;
+    return TRUE;
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+static
+bool
+_wsgi_request_get_response_status(wsgi_request_t self, 
+                                  int *status_code, const char **status_reason)
+{
+    const char *status = PyString_AsString(self->response_status);
+    if ((NULL == status) || (strlen(status) < 4))
+    {
+        return FALSE;
+    }
+    // According to the WSGI spec the status string provided by the 
+    // WSGI application should not have any surrounding whitespace,
+    // and should only consist of a status code and a reason phrase
+    // separated by a single space.
+    *status_code = atoi(status);
+    if (0 == status_code)
+    {
+        return FALSE;
+    }
+    *status_reason = &status[4]; // status code should always be 3 digits
     return TRUE;
 }
 
@@ -154,27 +190,15 @@ static
 bool
 _wsgi_request_send_body(wsgi_request_t self, const char *body, size_t body_size)
 {
-    const char *status;
     int status_code;
     const char *status_reason;
     evhttp_request_t request;
     evbuffer_t buffer = NULL;
 
-    status = PyString_AsString(self->response_status);
-    if ((NULL == status) || (strlen(status) < 4))
+    if (!_wsgi_request_get_response_status(self, &status_code, &status_reason))
     {
         return FALSE;
     }
-    // According to the WSGI spec the status string provided by the 
-    // WSGI application should not have any surrounding whitespace,
-    // and should only consist of a status code and a reason phrase
-    // separated by a single space.
-    status_code = atoi(status);
-    if (0 == status_code)
-    {
-        return FALSE;
-    }
-    status_reason = &status[4]; // status code should always be 3 digits
 
     request = wsgi_context_get_request(self->context);
     if (body_size > 0)
@@ -196,12 +220,60 @@ _wsgi_request_send_body(wsgi_request_t self, const char *body, size_t body_size)
 /**
 */
 static
+bool
+_wsgi_request_send_chunked_body_start(wsgi_request_t self)
+{
+    int status_code;
+    const char *status_reason;
+
+    if (_wsgi_request_get_response_status(self, &status_code, &status_reason))
+    {
+        evhttp_send_reply_start(
+            wsgi_context_get_request(self->context), 
+            status_code, status_reason
+        );
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static
+void
+_wsgi_request_send_body_chunk(wsgi_request_t self, 
+                              const char *chunk, size_t chunk_size)
+{
+    evbuffer_t buffer = evbuffer_new();
+    evbuffer_add(buffer, chunk, chunk_size);
+    evhttp_send_reply_chunk(wsgi_context_get_request(self->context), buffer);
+    evbuffer_free(buffer);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static
+void
+_wsgi_request_send_chunked_body_end(wsgi_request_t self)
+{
+    evhttp_send_reply_end(wsgi_context_get_request(self->context));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static
 bool 
 _wsgi_request_send_response(wsgi_request_t request)
 {
     Py_ssize_t num_items;
     PyObject *it;
     PyObject *data;
+    int content_len = -1;
+    bool chunked = TRUE;
 
     // If the WSGI application did not provide a Content-Length HTTP header
     // then libevent will set it to match the size of the data sent out. 
@@ -221,49 +293,62 @@ _wsgi_request_send_response(wsgi_request_t request)
         return FALSE;
     }
 
-    if (1 == num_items) // the most likely case
+    while (data = PyIter_Next(it))
     {
-        while (data = PyIter_Next(it))
+        Py_ssize_t body_size = PyString_Size(data);
+        if (PyErr_Occurred())
         {
-            Py_ssize_t body_size = PyString_Size(data);
-            if (PyErr_Occurred())
+            Py_DECREF(data);
+            break;
+        }
+
+        if (body_size > 0)
+        {
+            const char *body = PyString_AsString(data);
+            if (NULL == body)
             {
                 Py_DECREF(data);
                 break;
             }
-            if (body_size > 0)
+
+            if (!request->response_headers_packed)
             {
-                const char *body = PyString_AsString(data);
-                if (NULL == body)
+                if (!_wsgi_pack_headers(request, &content_len))
                 {
                     Py_DECREF(data);
                     break;
                 }
 
-                if (!request->response_headers_packed)
+                if (((content_len < 0) && (1 == num_items)) || (content_len == body_size))
                 {
-                    if (!_wsgi_pack_headers(request))
-                    {
-                        Py_DECREF(data);
-                        break;
-                    }
+                    chunked = FALSE;
                 }
 
-                if (!_wsgi_request_send_body(request, body, body_size))
+                if (chunked && !_wsgi_request_send_chunked_body_start(request))
                 {
                     Py_DECREF(data);
                     break;
                 }
+
+                request->response_headers_packed = TRUE;
             }
-            Py_DECREF(data);
+
+            if (chunked)
+            {
+                _wsgi_request_send_body_chunk(request, body, body_size);
+            }
+            else if (!_wsgi_request_send_body(request, body, body_size))
+            {
+                Py_DECREF(data);
+                break;
+            }
         }
+        Py_DECREF(data);
     }
-    else if ((-1 == num_items) || (num_items > 1))
+
+    if (chunked && request->response_headers_packed)
     {
-        // We don't know how many bytes in total we'll need to send so we'll 
-        // have to send it in chunks.
-        
-        // FIXME: implement this!
+        _wsgi_request_send_chunked_body_end(request);
     }
 
     Py_DECREF(it);
@@ -276,10 +361,11 @@ _wsgi_request_send_response(wsgi_request_t request)
     // if there was no data to send still send the headers
     if (!request->response_headers_packed)
     {
-        if (!_wsgi_pack_headers(request))
+        if (!_wsgi_pack_headers(request, &content_len))
         {
             return FALSE;
         }
+        request->response_headers_packed = TRUE;
         _wsgi_request_send_body(request, NULL, 0);
     }
 
@@ -332,6 +418,7 @@ wsgi_request_send_response(wsgi_request_t request, PyObject *app_result)
 /**
     Allocates memory for a request object.
 */
+static
 PyObject *
 _wsgi_request_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -345,6 +432,7 @@ _wsgi_request_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             return NULL;
         }
 
+        self->input = NULL;
         self->context = NULL;
         self->response_status = NULL;
         self->response_headers = NULL;
@@ -358,6 +446,7 @@ _wsgi_request_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 /**
     Initializes a request object.
 */
+static
 int
 _wsgi_request_init(wsgi_request_t self, PyObject *args, PyObject *kwds)
 {
@@ -369,7 +458,8 @@ _wsgi_request_init(wsgi_request_t self, PyObject *args, PyObject *kwds)
     }
 
     self->context = (wsgi_context_t)PyCObject_AsVoidPtr(py_context);
-
+    self->input = wsgi_input_stream_new(self);
+    
     if (!_wsgi_request_fill_environ(self))
     {
         return -1;
@@ -381,6 +471,7 @@ _wsgi_request_init(wsgi_request_t self, PyObject *args, PyObject *kwds)
 //------------------------------------------------------------------------------
 /**
 */
+static
 void
 _wsgi_request_dealloc(wsgi_request_t self)
 {
@@ -392,6 +483,7 @@ _wsgi_request_dealloc(wsgi_request_t self)
 /**
     This will be called by the WSGI application.
 */
+static
 PyObject * 
 _wsgi_request_start_response(wsgi_request_t self, PyObject *args)
 {
@@ -457,6 +549,7 @@ _wsgi_request_start_response(wsgi_request_t self, PyObject *args)
 //------------------------------------------------------------------------------
 /**
 */
+static
 PyObject * 
 _wsgi_request_write(wsgi_request_t self, PyObject *args)
 {
@@ -740,11 +833,10 @@ _environ_set_wsgi_vars(PyObject *environ, wsgi_request_t request)
     {
         return FALSE;
     }
-    // FIXME: implement this required feature
-    //if (0 != PyDict_SetItemString(environ, "wsgi.input", request->input))
-    //{
-    //    return FALSE;
-    //}
+    if (0 != PyDict_SetItemString(environ, "wsgi.input", (PyObject *)request->input))
+    {
+        return FALSE;
+    }
     py_stderr = wsgi_context_get_stderr(request->context);
     if (0 != PyDict_SetItemString(environ, "wsgi.errors", py_stderr))
     {
@@ -775,6 +867,7 @@ _environ_set_wsgi_vars(PyObject *environ, wsgi_request_t request)
 //------------------------------------------------------------------------------
 /**
 */
+static
 bool
 _wsgi_request_fill_environ(wsgi_request_t self)
 {
@@ -798,6 +891,9 @@ _wsgi_request_fill_environ(wsgi_request_t self)
     return TRUE;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 static PyMethodDef wsgi_request_methods[] =
 {
     {
@@ -814,6 +910,9 @@ static PyMethodDef wsgi_request_methods[] =
     { NULL } // sentinel
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
 PyTypeObject wsgi_request_type = 
 {
     PyObject_HEAD_INIT(NULL)

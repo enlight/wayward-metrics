@@ -7,6 +7,7 @@ include_directories(
 
 set(include_wsgi_src
     ../include/wsgi/context.h
+    ../include/wsgi/input_stream.h
     ../include/wsgi/module.h
     ../include/wsgi/request.h
     ../include/wsgi/server.h
@@ -18,6 +19,7 @@ set(include_src
 
 set(src_wsgi_src
     wsgi/context.c
+    wsgi/input_stream.c
     wsgi/module.c
     wsgi/request.c
     wsgi/server.c

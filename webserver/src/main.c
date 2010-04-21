@@ -86,11 +86,11 @@ main(int argc, char **argv)
     http = evhttp_new(base);
     wsgi = wsgi_server_new();
 
-    if (wsgi_server_init_python(wsgi, "test", "app"))
+    if (wsgi_server_init_python(wsgi, argv[0], "run_server", "application"))
     {
         if (0 == evhttp_bind_socket(http, "127.0.0.1", 8080))
         {
-            evhttp_set_gencb(http, wsgi_handle_request, wsgi);
+            evhttp_set_gencb(http, wsgi_server_handle_request, wsgi);
             evhttp_set_timeout(http, 60);
         }
 

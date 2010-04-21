@@ -24,11 +24,13 @@ wsgi_server_new(void)
 /**
 */
 bool 
-wsgi_server_init_python(wsgi_server_t server, const char *mod_name, const char *app_name)
+wsgi_server_init_python(wsgi_server_t server, char *exe_name, 
+                        const char *mod_name, const char *app_name)
 {
     PyObject *py_str;
     PyObject *py_module;
 
+    Py_SetProgramName(exe_name);
     //PyEval_InitThreads();
     Py_Initialize();
     wsgi_module_initialize();
@@ -62,6 +64,10 @@ wsgi_server_init_python(wsgi_server_t server, const char *mod_name, const char *
     Py_DECREF(py_str);
     if (NULL == py_module)
     {
+        if (PyErr_Occurred())
+        {
+            PyErr_Print();
+        }
         return FALSE;
     }
     server->py_app = PyObject_GetAttrString(py_module, app_name);
@@ -100,7 +106,7 @@ wsgi_server_destroy(wsgi_server_t server)
 /**
 */
 void
-wsgi_handle_request(evhttp_request_t request, void *server_ptr)
+wsgi_server_handle_request(evhttp_request_t request, void *server_ptr)
 {
     wsgi_server_t server = (wsgi_server_t)server_ptr;
     // create a new context for the thread

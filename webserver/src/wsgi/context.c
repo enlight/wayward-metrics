@@ -75,7 +75,14 @@ _invoke_app(wsgi_context_t context, PyObject *app)
     if (NULL != request)
     {
         PyObject *result = wsgi_request_invoke_app(request, app);
-        if (NULL != result) 
+        if (NULL == result)
+        {
+            if (PyErr_Occurred())
+            {
+                PyErr_Print();
+            }
+        }
+        else
         {
             wsgi_request_send_response(request, result);
         }
