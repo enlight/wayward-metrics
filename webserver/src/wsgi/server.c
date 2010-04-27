@@ -106,9 +106,8 @@ wsgi_server_destroy(wsgi_server_t server)
 /**
 */
 void
-wsgi_server_handle_request(evhttp_request_t request, void *server_ptr)
+wsgi_server_handle_request(evhttp_request_t request, wsgi_server_t server)
 {
-    wsgi_server_t server = (wsgi_server_t)server_ptr;
     // create a new context for the thread
     wsgi_context_t context = wsgi_context_new();
     if (NULL != context)

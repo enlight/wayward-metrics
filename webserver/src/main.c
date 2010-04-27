@@ -8,7 +8,9 @@
 #include "event2/event.h"
 #include "event2/http.h"
 #include "config.h"
+#include "http/server.h"
 #include "wsgi/server.h"
+#include "url_resolver.h"
 
 static int ws_socket_system_initialized = FALSE;
 event_base_t base = NULL;
@@ -78,6 +80,7 @@ main(int argc, char **argv)
 {
     evhttp_t http;
     wsgi_server_t wsgi;
+    wwm_url_resolver_t url_resolver;
 
     event_set_log_callback(ws_libevent_log);
     ws_socket_system_initialize();
@@ -85,12 +88,16 @@ main(int argc, char **argv)
     base = event_base_new();
     http = evhttp_new(base);
     wsgi = wsgi_server_new();
+    url_resolver = wwm_url_resolver_new();
 
     if (wsgi_server_init_python(wsgi, argv[0], "run_server", "application"))
     {
         if (0 == evhttp_bind_socket(http, "127.0.0.1", 8080))
         {
-            evhttp_set_gencb(http, wsgi_server_handle_request, wsgi);
+            wwm_url_resolver_add_handler(url_resolver, "/media", (evhttp_callback_t)wwm_http_server_handle_request, http);
+            wwm_url_resolver_add_handler(url_resolver, "/",      (evhttp_callback_t)wsgi_server_handle_request, wsgi);
+            
+            evhttp_set_gencb(http, (evhttp_callback_t)wwm_url_resolver_handle_request, url_resolver);
             evhttp_set_timeout(http, 60);
         }
 
@@ -99,6 +106,7 @@ main(int argc, char **argv)
         event_base_dispatch(base); // loop
     }
 
+    wwm_url_resolver_destroy(url_resolver);
     wsgi_server_destroy(wsgi);
     evhttp_free(http);
     event_base_free(base);

@@ -5,6 +5,10 @@ include_directories(
     D:/dev/libevent/WIN32-Code
 )
 
+set(include_http_src
+    ../include/http/server.h
+)
+
 set(include_wsgi_src
     ../include/wsgi/context.h
     ../include/wsgi/input_stream.h
@@ -15,6 +19,12 @@ set(include_wsgi_src
 
 set(include_src
     ../include/config.h
+    ../include/mime_types.h
+    ../include/url_resolver.h
+)
+
+set(src_http_src
+    http/server.c
 )
 
 set(src_wsgi_src
@@ -27,18 +37,24 @@ set(src_wsgi_src
 
 set(src_src
     main.c
+    mime_types.c
+    url_resolver.c
 )
 
 set(webserver_SRCS
+    ${include_http_src}
     ${include_wsgi_src}
     ${include_src}
+    ${src_http_src}
     ${src_wsgi_src}
     ${src_src}
 )
 
 source_group(include FILES ${include_src})
+source_group(include\\http FILES ${include_http_src})
 source_group(include\\wsgi FILES ${include_wsgi_src})
 source_group(src FILES ${src_src})
+source_group(src\\http FILES ${src_http_src})
 source_group(src\\wsgi FILES ${src_wsgi_src})
 
 add_executable(webserver ${webserver_SRCS})

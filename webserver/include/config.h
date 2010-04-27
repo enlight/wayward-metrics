@@ -26,4 +26,6 @@ typedef struct evkeyval *evkeyval_t;
 typedef struct evbuffer *evbuffer_t;
 typedef struct evbuffer_ptr evbuffer_ptr_t;
 
+typedef void (*evhttp_callback_t)(evhttp_request_t, void *);
+
 #endif _WAYWARD_METRICS_CONFIG_H_
