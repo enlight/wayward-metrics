@@ -4,10 +4,104 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
+#include <assert.h>
 #include "http/server.h"
 #include "mime_types.h"
 #include "event2/http.h"
 #include "event2/buffer.h"
+
+typedef struct _wwm_http_server_alias_t_
+{
+    char *url_path;
+    char *dir_path;
+} *_wwm_http_server_alias_t;
+
+struct wwm_http_server_t_
+{
+    evhttp_t http;
+    int num_aliases;
+    _wwm_http_server_alias_t aliases;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+wwm_http_server_t 
+wwm_http_server_new(event_base_t base)
+{
+    wwm_http_server_t s = (wwm_http_server_t)calloc(1, sizeof(struct wwm_http_server_t_));
+    s->http = evhttp_new(base);
+    evhttp_set_timeout(s->http, 60);
+    return s;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+wwm_http_server_destroy(wwm_http_server_t server)
+{
+    int i;
+    for (i = 0; i < server->num_aliases; i++)
+    {
+        free(server->aliases[i].url_path);
+        free(server->aliases[i].dir_path);
+    }
+    free(server->aliases);
+    evhttp_free(server->http);
+    free(server);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+wwm_http_server_listen_on(wwm_http_server_t server, const char *address, int port)
+{
+    return (0 == evhttp_bind_socket(server->http, address, port));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+wwm_http_server_set_num_aliases(wwm_http_server_t server, int num_aliases)
+{
+    assert(0 == server->num_aliases);
+
+    server->num_aliases = num_aliases;
+    server->aliases = calloc(num_aliases, sizeof(struct _wwm_http_server_alias_t_));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+wwm_http_server_set_alias(wwm_http_server_t server, int alias_index, 
+                          const char *url_path, const char *dir_path)
+{
+    assert(alias_index < server->num_aliases);
+    assert(NULL != url_path);
+    assert(NULL != dir_path);
+    assert(NULL == server->aliases[alias_index].url_path);
+    assert(NULL == server->aliases[alias_index].dir_path);
+
+    server->aliases[alias_index].url_path = strdup(url_path);
+    server->aliases[alias_index].dir_path = strdup(dir_path);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+wwm_http_server_set_url_resolver(wwm_http_server_t server, 
+                                 wwm_url_resolver_t url_resolver)
+{
+    evhttp_set_gencb(
+        server->http, 
+        (evhttp_callback_t)wwm_url_resolver_handle_request, url_resolver
+    );
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -178,23 +272,29 @@ _wwm_http_server_send_file(evhttp_request_t request, const char *file_path)
 /**
 */
 void
-wwm_http_server_handle_request(evhttp_request_t request, evhttp_t server)
+wwm_http_server_handle_request(evhttp_request_t request, wwm_http_server_t server)
 {
     const char *uri = evhttp_request_get_uri(request);
     if (uri)
     {
         char *decoded_uri = evhttp_decode_uri(uri);
-        // FIXME: make this configurable
-        const char *alias_base_path = "D:/Dev/django/django/contrib/admin/media";
-        size_t alias_len = strlen("/media");
-        if (strncmp("/media", decoded_uri, alias_len) == 0)
+        int i;
+        for (i = 0; i < server->num_aliases; i++)
         {
-            const char *alias_rel_path = decoded_uri + alias_len;
-            char *file_path = (char *)malloc(strlen(alias_base_path) + strlen(alias_rel_path) + 1);
-            strcpy(file_path, alias_base_path);
-            strcat(file_path, alias_rel_path);
-            _wwm_http_server_send_file(request, file_path);
-            free(file_path);
+            _wwm_http_server_alias_t alias = &server->aliases[i];
+            size_t alias_len = strlen(alias->url_path);
+            if (strncmp(alias->url_path, decoded_uri, alias_len) == 0)
+            {
+                const char *rel_path = decoded_uri + alias_len;
+                char *file_path = (char *)malloc(strlen(alias->dir_path) + strlen(rel_path) + 1);
+                strcpy(file_path, alias->dir_path);
+                // FIXME: This is unsafe, need to make sure rel_path doesn't
+                // contain any '..' otherwise the user can request any file
+                // on the server!
+                strcat(file_path, rel_path);
+                _wwm_http_server_send_file(request, file_path);
+                free(file_path);
+            }
         }
         free(decoded_uri);
     }

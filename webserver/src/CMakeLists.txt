@@ -3,6 +3,8 @@ include_directories(
     D:/dev/libevent/include
     D:/dev/libevent/compat
     D:/dev/libevent/WIN32-Code
+    D:/dev/avro/lang/c/jansson/src
+    D:/Dev/avro/lang/c/src
 )
 
 set(include_http_src
@@ -18,6 +20,7 @@ set(include_wsgi_src
 )
 
 set(include_src
+    ../include/bootstrapper.h
     ../include/config.h
     ../include/mime_types.h
     ../include/url_resolver.h
@@ -36,6 +39,7 @@ set(src_wsgi_src
 )
 
 set(src_src
+    bootstrapper.c
     main.c
     mime_types.c
     url_resolver.c
@@ -60,5 +64,6 @@ source_group(src\\wsgi FILES ${src_wsgi_src})
 add_executable(webserver ${webserver_SRCS})
 target_link_libraries(webserver 
     libevent
+    avro
     Ws2_32
 )

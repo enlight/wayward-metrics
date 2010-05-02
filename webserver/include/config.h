@@ -1,6 +1,12 @@
 #ifndef _WAYWARD_METRICS_CONFIG_H_
 #define _WAYWARD_METRICS_CONFIG_H_
 
+#ifdef WIN32
+// MSVC doesn't support C99, hence inline is not recognized as a keyword,
+// so we need to use the MSVC specific __inline instead.
+#define inline __inline
+#endif // WIN32
+
 typedef int bool;
 #ifndef TRUE
 #   define TRUE 1

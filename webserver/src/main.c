@@ -5,17 +5,14 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
-#include "event2/event.h"
-#include "event2/http.h"
 #include "config.h"
-#include "http/server.h"
-#include "wsgi/server.h"
-#include "url_resolver.h"
+#include "bootstrapper.h"
+#include "avro.h"
 
 static int ws_socket_system_initialized = FALSE;
-event_base_t base = NULL;
 
-void 
+static
+bool 
 ws_socket_system_initialize(void)
 {
     if (!ws_socket_system_initialized)
@@ -31,8 +28,10 @@ ws_socket_system_initialize(void)
             ws_socket_system_initialized = TRUE;
         }
     }
+    return ws_socket_system_initialized;
 }
 
+static
 void 
 ws_socket_system_cleanup(void)
 {
@@ -44,71 +43,35 @@ ws_socket_system_cleanup(void)
     }
 }
 
-BOOL
-WINAPI
-ctrl_handler(DWORD ctrl_type) 
-{ 
-    switch (ctrl_type)
-    { 
-        case CTRL_C_EVENT:
-        case CTRL_CLOSE_EVENT:
-            // FIXME: This doesn't actually work as advertised, the application
-            // will only terminate after handling the current request, if there
-            // is not request then it will never exit at all. This is probably
-            // a libevent bug.
-            event_base_loopexit(base, NULL);
-            return TRUE; // don't call any other handlers
-
-        case CTRL_BREAK_EVENT:
-        case CTRL_LOGOFF_EVENT:
-        case CTRL_SHUTDOWN_EVENT:
-            return FALSE;
-
-        default: 
-            return FALSE; // find someone else to handle it
-    } 
-}
-
-void 
-ws_libevent_log(int severity, const char *msg)
-{
-    OutputDebugString(msg);
-}
-
 int
 main(int argc, char **argv)
 {
-    evhttp_t http;
-    wsgi_server_t wsgi;
-    wwm_url_resolver_t url_resolver;
+    wwm_bootstrapper_t bs;
 
-    event_set_log_callback(ws_libevent_log);
-    ws_socket_system_initialize();
-
-    base = event_base_new();
-    http = evhttp_new(base);
-    wsgi = wsgi_server_new();
-    url_resolver = wwm_url_resolver_new();
-
-    if (wsgi_server_init_python(wsgi, argv[0], "run_server", "application"))
+    if (!ws_socket_system_initialize())
     {
-        if (0 == evhttp_bind_socket(http, "127.0.0.1", 8080))
-        {
-            wwm_url_resolver_add_handler(url_resolver, "/media", (evhttp_callback_t)wwm_http_server_handle_request, http);
-            wwm_url_resolver_add_handler(url_resolver, "/",      (evhttp_callback_t)wsgi_server_handle_request, wsgi);
-            
-            evhttp_set_gencb(http, (evhttp_callback_t)wwm_url_resolver_handle_request, url_resolver);
-            evhttp_set_timeout(http, 60);
-        }
-
-        SetConsoleCtrlHandler(ctrl_handler, TRUE);
-
-        event_base_dispatch(base); // loop
+        return EXIT_FAILURE;
     }
 
-    wwm_url_resolver_destroy(url_resolver);
-    wsgi_server_destroy(wsgi);
-    evhttp_free(http);
-    event_base_free(base);
+    avro_init(); // need this to use jansson
+
+    bs = wwm_boostrapper_new();
+    
+    if (!wwm_bootstrapper_parse_cmdline(bs, argc, argv))
+    {
+        return EXIT_FAILURE;
+    }
+    
+    if (!wwm_bootstrapper_configure(bs))
+    {
+        return EXIT_FAILURE;
+    }
+    
+    wwm_bootstrapper_run(bs);
+    
+    wwm_bootstrapper_destroy(bs);
+    
     ws_socket_system_cleanup();
+
+    return EXIT_SUCCESS;
 }
